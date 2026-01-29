@@ -64,15 +64,29 @@ It acts as a smart wrapper around the raw Assetto Corsa server API, providing a 
 
 ### Running Locally
 
-To run the full stack (Frontend + API Proxy) locally, use Wrangler. This ensures the `/api` endpoints work correctly by emulating the Cloudflare environment.
+There are two development modes:
+
+#### 1. Full Stack (Frontend + API)
+
+Build the project and run with Wrangler to test Cloudflare Functions locally:
 
 ```bash
-# Start frontend and backend proxy together
-npx wrangler pages dev -- npm run dev
+npm run dev:api
 ```
-The application will be available at `http://localhost:8788`.
 
-*Note: Running just `npm run dev` will start the frontend at `http://localhost:5173`, but calls to `/api` will fail unless you have a separate proxy configured.*
+This runs `npm run build` followed by `npx wrangler pages dev ./dist`. The application will be available at `http://localhost:8788`.
+
+#### 2. Frontend Only (Fast Mode)
+
+For rapid UI development without the API:
+
+```bash
+npm run dev
+```
+
+This starts Vite dev server at `http://localhost:5173` with hot reload. API calls will fail unless you enable mock data via `VITE_USE_MOCK_DATA=true` in `.env`.
+
+> ⚠️ **Note**: The deprecated `npx wrangler pages dev -- npm run dev` proxy mode causes `Cannot assign requested address` errors due to port exhaustion. Always use `dev:api` for full stack development.
 
 ### Building for Production
 

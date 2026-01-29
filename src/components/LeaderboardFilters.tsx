@@ -18,6 +18,12 @@ interface LeaderboardFiltersProps {
     onSortDirectionToggle: () => void;
 }
 
+const SORT_OPTIONS = [
+    { value: 'lapTime', label: 'Best Lap' },
+    { value: 'driver', label: 'Driver Name' },
+    { value: 'laps', label: 'Lap Count' },
+] as const;
+
 export function LeaderboardFilters({
     classes,
     selectedClass,
@@ -63,12 +69,16 @@ export function LeaderboardFilters({
                 </label>
                 <Select value={sortBy} onValueChange={handleSortChange}>
                     <SelectTrigger size="sm" className="w-full">
-                        <SelectValue placeholder="Sort by" />
+                        <SelectValue placeholder="Sort by">
+                            {SORT_OPTIONS.find((option) => option.value === sortBy)?.label}
+                        </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="lapTime">Best Lap</SelectItem>
-                        <SelectItem value="driver">Driver Name</SelectItem>
-                        <SelectItem value="laps">Lap Count</SelectItem>
+                        {SORT_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                            </SelectItem>
+                        ))}
                     </SelectContent>
                 </Select>
             </div>

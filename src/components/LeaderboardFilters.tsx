@@ -38,16 +38,16 @@ export function LeaderboardFilters({
     };
 
     return (
-        <div className="flex flex-wrap gap-3 mb-6 p-4 rounded-lg border bg-card">
-            <div className="flex-1 min-w-[140px]">
-                <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-2 block">
+        <div className="flex flex-wrap gap-2 mb-4 p-3 rounded-lg border bg-card">
+            <div className="flex-1 min-w-[120px]">
+                <label className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-1 block">
                     Class
                 </label>
                 <Select value={selectedClass} onValueChange={handleClassChange}>
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger size="sm" className="w-full">
                         <SelectValue placeholder="Select class" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent alignItemWithTrigger={false}>
                         {classes.map((cls) => (
                             <SelectItem key={cls} value={cls}>
                                 {cls}
@@ -57,12 +57,12 @@ export function LeaderboardFilters({
                 </Select>
             </div>
 
-            <div className="flex-1 min-w-[140px]">
-                <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-2 block">
+            <div className="flex-1 min-w-[120px]">
+                <label className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-1 block">
                     Sort By
                 </label>
                 <Select value={sortBy} onValueChange={handleSortChange}>
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger size="sm" className="w-full">
                         <SelectValue placeholder="Sort by" />
                     </SelectTrigger>
                     <SelectContent>
@@ -77,7 +77,7 @@ export function LeaderboardFilters({
                 <Button
                     onClick={onSortDirectionToggle}
                     variant="outline"
-                    size="icon"
+                    size="icon-sm"
                     title={sortAsc ? 'Ascending' : 'Descending'}
                 >
                     {sortAsc ? (

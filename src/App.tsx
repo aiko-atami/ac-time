@@ -38,11 +38,11 @@ export function App() {
 
     return (
         <div className="min-h-screen">
-            <div className="container mx-auto px-4 py-6 sm:py-8 max-w-4xl">
+            <div className="container mx-auto px-3 py-4 sm:py-5 max-w-4xl">
                 {/* Header */}
-                <header className="mb-6 sm:mb-8">
-                    <div className="space-y-1 mb-2">
-                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold">
+                <header className="mb-4 sm:mb-5">
+                    <div className="space-y-0.5 mb-1">
+                        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">
                             {data.serverName || 'AC Live Timing'}
                         </h1>
 
@@ -70,7 +70,7 @@ export function App() {
 
                 {/* Error Message */}
                 {data.error && (
-                    <div className="mb-6 p-4 rounded-lg border border-destructive bg-destructive/10">
+                    <div className="mb-4 p-3 rounded-lg border border-destructive bg-destructive/10">
                         <div className="flex items-start gap-2">
                             <span className="text-lg">⚠️</span>
                             <div>

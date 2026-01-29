@@ -21,7 +21,7 @@ export function Leaderboard({ entries }: LeaderboardProps) {
     }
 
     return (
-        <div className="space-y-3 sm:space-y-4">
+        <div className="space-y-2 sm:space-y-2.5">
             {entries.map((entry, index) => (
                 <LeaderboardCard
                     key={entry.id}

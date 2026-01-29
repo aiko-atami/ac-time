@@ -25,3 +25,9 @@ dist-ssr
 
 # Legacy Svelte project
 legacy/
+
+# Environment variables
+.env
+
+# Cloudflare Wrangler
+.wrangler/

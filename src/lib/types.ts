@@ -1,8 +1,42 @@
 /**
  * Type definitions for AC Live Timing data
  * 
- * Backend API returns pre-processed data in ProcessedEntry[] format
+ * Shared between Frontend and Backend (Cloudflare Functions)
  */
+
+export interface Driver {
+    CarInfo?: {
+        DriverName: string;
+        TeamName: string;
+        DriverGUID: string;
+    };
+    Cars?: Record<string, CarData>;
+}
+
+export interface CarData {
+    CarName?: string;
+    BestLap?: number;
+    BestSplits?: Record<string, { SplitTime?: number }>;
+    BestLapSplits?: Record<string, { SplitTime?: number }>;
+    NumLaps?: number;
+}
+
+export interface LeaderboardData {
+    ConnectedDrivers?: Driver[];
+    DisconnectedDrivers?: Driver[];
+    ServerName?: string;
+    Track?: string;
+    Name?: string;
+}
+
+export interface ConnectedDriver {
+    CarInfo: {
+        DriverName: string;
+        TeamName: string;
+        DriverGUID: string;
+    };
+    Cars: Record<string, CarData>;
+}
 
 export interface ProcessedEntry {
     id: string;                       // `${driverGUID}_${carModel}`
@@ -25,6 +59,11 @@ export interface ProcessedLeaderboard {
     sessionName: string;
     lastUpdate?: string;
     error?: string;
+}
+
+export interface CarClassRule {
+    name: string;
+    patterns: string[]; // Substrings to match in car name/model (case-insensitive)
 }
 
 export interface ServerInfo {

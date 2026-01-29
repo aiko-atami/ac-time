@@ -1,16 +1,19 @@
-import type { ProcessedLeaderboard } from './types';
+import type { ProcessedLeaderboard, CarClassRule } from './types';
 import { mockLeaderboardData } from './mockData';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
-const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true' || !API_URL;
 
 /**
  * Fetch pre-processed leaderboard data from backend API
  * In development mode with no API_URL, uses mock data
  */
-export async function fetchLeaderboard(): Promise<ProcessedLeaderboard> {
-    // Use mock data in development
-    if (USE_MOCK_DATA) {
+export async function fetchLeaderboard(
+    serverUrl?: string,
+    classRules?: CarClassRule[]
+): Promise<ProcessedLeaderboard> {
+    // Only use mock data if explicitly enabled via environment variable
+    if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
+        console.log('Using mock data');
         // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 500));
         return mockLeaderboardData;
@@ -20,7 +23,24 @@ export async function fetchLeaderboard(): Promise<ProcessedLeaderboard> {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-        const response = await fetch(`${API_URL}/api/leaderboard`, {
+        // Build URL with query params
+        let endpoint = `${API_URL}/api/leaderboard`;
+        const params = new URLSearchParams();
+
+        if (serverUrl) {
+            params.append('url', serverUrl);
+        }
+
+        if (classRules && classRules.length > 0) {
+            params.append('rules', JSON.stringify(classRules));
+        }
+
+        const queryString = params.toString();
+        if (queryString) {
+            endpoint += `?${queryString}`;
+        }
+
+        const response = await fetch(endpoint, {
             signal: controller.signal,
             headers: {
                 'Content-Type': 'application/json',

@@ -6,8 +6,21 @@ import { LeaderboardFilters } from '@/components/LeaderboardFilters';
 import { Leaderboard } from '@/components/Leaderboard';
 
 export function App() {
+    // Default server URL (can be moved to a selector or input later)
+    const DEFAULT_SERVER_URL = 'https://ac8.yoklmnracing.ru/api/live-timings/leaderboard.json';
+
+    // Default Car Class Rules (matches previous hardcoded logic)
+    const DEFAULT_CAR_CLASSES = [
+        { name: 'Super Production', patterns: ['SUPER-PRODUCTION'] },
+        { name: 'Lada C GT', patterns: ['Concept C GT'] },
+    ];
+
     // Fetch leaderboard data with 30s auto-refresh
-    const { data, loading, error } = useLeaderboard({ refreshInterval: 30000 });
+    const { data, loading, error } = useLeaderboard({
+        refreshInterval: 30000,
+        serverUrl: DEFAULT_SERVER_URL,
+        classRules: DEFAULT_CAR_CLASSES
+    });
 
     // Filter and sort logic
     const {

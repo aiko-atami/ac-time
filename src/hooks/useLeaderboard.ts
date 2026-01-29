@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchLeaderboard } from '@/lib/api';
-import type { ProcessedLeaderboard } from '@/lib/types';
+import type { ProcessedLeaderboard, CarClassRule } from '@/lib/types';
 
 interface UseLeaderboardOptions {
     refreshInterval?: number; // Auto-refresh interval in milliseconds
+    serverUrl?: string;       // Target AC server JSON URL
+    classRules?: CarClassRule[]; // dynamic car class definitions
 }
 
 interface UseLeaderboardReturn {
@@ -20,7 +22,7 @@ interface UseLeaderboardReturn {
 export function useLeaderboard(
     options: UseLeaderboardOptions = {}
 ): UseLeaderboardReturn {
-    const { refreshInterval } = options;
+    const { refreshInterval, serverUrl, classRules } = options;
 
     const [data, setData] = useState<ProcessedLeaderboard | null>(null);
     const [loading, setLoading] = useState(true);
@@ -29,7 +31,7 @@ export function useLeaderboard(
     const loadData = useCallback(async () => {
         try {
             setLoading(true);
-            const result = await fetchLeaderboard();
+            const result = await fetchLeaderboard(serverUrl, classRules);
             setData(result);
             setError(null);
         } catch (err) {
@@ -51,7 +53,7 @@ export function useLeaderboard(
 
         const interval = setInterval(loadData, refreshInterval);
         return () => clearInterval(interval);
-    }, [refreshInterval, loadData]);
+    }, [refreshInterval, loadData, serverUrl]);
 
     return { data, loading, error, refetch: loadData };
 }

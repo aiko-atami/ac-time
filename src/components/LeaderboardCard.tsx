@@ -3,13 +3,31 @@ import { CarClassBadge } from './CarClassBadge';
 import { formatTime } from '@/lib/utils';
 import type { ProcessedEntry } from '@/lib/types';
 
+import { Badge } from '@/components/ui/badge';
+
 interface LeaderboardCardProps {
     entry: ProcessedEntry;
     position: number;
+    bestOverallLap: number | null;
 }
 
-export function LeaderboardCard({ entry, position }: LeaderboardCardProps) {
+export function LeaderboardCard({ entry, position, bestOverallLap }: LeaderboardCardProps) {
     const hasSplits = entry.bestLapSplits.length > 0 || entry.splits.length > 0;
+
+    // Calculate percentage relative to best lap
+    const percentage =
+        entry.bestLap && bestOverallLap && bestOverallLap > 0
+            ? (entry.bestLap / bestOverallLap) * 100
+            : null;
+
+    let badgeClass = 'bg-muted text-muted-foreground hover:bg-muted/80';
+    if (percentage) {
+        if (percentage > 107) {
+            badgeClass = 'bg-destructive/10 text-destructive hover:bg-destructive/20 border-destructive/20';
+        } else if (percentage > 105) {
+            badgeClass = 'bg-amber-500/10 text-amber-600 dark:text-amber-500 hover:bg-amber-500/20 border-amber-500/20';
+        }
+    }
 
     return (
         <Card className="p-2.5 sm:p-3">
@@ -47,14 +65,21 @@ export function LeaderboardCard({ entry, position }: LeaderboardCardProps) {
             <div className="flex flex-wrap gap-x-4 gap-y-1">
                 <div className="flex items-baseline gap-1.5">
                     <span className="text-xs text-muted-foreground font-medium">Best:</span>
-                    <span className="text-sm font-semibold font-mono text-primary">
-                        {formatTime(entry.bestLap)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold font-mono text-primary">
+                            {formatTime(entry.bestLap)}
+                        </span>
+                        {percentage && percentage >= 100 && (
+                            <Badge variant="outline" className={`h-5 px-1.5 font-mono text-[10px] ${badgeClass}`}>
+                                {Math.floor(percentage)}%
+                            </Badge>
+                        )}
+                    </div>
                 </div>
 
                 <div className="flex items-baseline gap-1.5">
                     <span className="text-xs text-muted-foreground font-medium">Theor:</span>
-                    <span className="text-sm font-semibold font-mono text-amber-600 dark:text-amber-500">
+                    <span className="text-sm font-semibold font-mono text-muted-foreground">
                         {formatTime(entry.theoreticalBestLap)}
                     </span>
                 </div>

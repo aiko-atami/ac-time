@@ -20,6 +20,10 @@ export function Leaderboard({ entries }: LeaderboardProps) {
         );
     }
 
+    const bestOverallLap = entries.length > 0
+        ? Math.min(...entries.map((e) => e.bestLap || Infinity).filter((t) => t !== Infinity))
+        : null;
+
     return (
         <div className="space-y-2 sm:space-y-2.5">
             {entries.map((entry, index) => (
@@ -27,6 +31,7 @@ export function Leaderboard({ entries }: LeaderboardProps) {
                     key={entry.id}
                     entry={entry}
                     position={index + 1}
+                    bestOverallLap={bestOverallLap}
                 />
             ))}
         </div>

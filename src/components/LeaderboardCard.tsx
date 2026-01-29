@@ -15,22 +15,22 @@ export function LeaderboardCard({ entry, position }: LeaderboardCardProps) {
         <Card className="p-2.5 sm:p-3">
             {/* Header */}
             <div className="flex items-center gap-2 mb-2">
-                <div className="flex items-baseline gap-1.5 min-w-0 flex-1">
-                    <span className="text-base font-bold text-primary shrink-0">#{position}</span>
-                    <h3 className="font-semibold text-sm sm:text-base truncate">
-                        {entry.driverName}
-                    </h3>
+                <div className="flex flex-col min-w-0 flex-1">
+                    <div className="flex items-baseline gap-1.5">
+                        <span className="text-base font-bold text-primary shrink-0">#{position}</span>
+                        <h3 className="font-semibold text-sm sm:text-base truncate">
+                            {entry.driverName}
+                        </h3>
+                    </div>
+                    {entry.teamName && (
+                        <p className="text-xs text-muted-foreground truncate">
+                            {entry.teamName}
+                        </p>
+                    )}
                 </div>
 
                 <CarClassBadge carClass={entry.carClass} />
             </div>
-
-            {/* Team Name */}
-            {entry.teamName && (
-                <p className="text-xs text-muted-foreground truncate -mt-1.5 mb-1.5">
-                    {entry.teamName}
-                </p>
-            )}
 
             {/* Car Name + Laps */}
             <div className="mb-2 pb-1.5 border-b flex items-center justify-between gap-2">
@@ -52,7 +52,7 @@ export function LeaderboardCard({ entry, position }: LeaderboardCardProps) {
                     </span>
                 </div>
 
-                <div className="items-baseline gap-1.5 hidden sm:flex">
+                <div className="flex items-baseline gap-1.5">
                     <span className="text-xs text-muted-foreground font-medium">Theor:</span>
                     <span className="text-sm font-semibold font-mono text-amber-600 dark:text-amber-500">
                         {formatTime(entry.theoreticalBestLap)}

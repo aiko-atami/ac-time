@@ -34,7 +34,10 @@ jobs:
         run: |
           TAG="championship-${CHAMPIONSHIP_ID}"
           FILE="participants-${CHAMPIONSHIP_ID}.csv"
+          FILE_REVERSED="participants-${CHAMPIONSHIP_ID}-name-reversed.csv"
+          README_LINK="https://github.com/$GITHUB_REPO/blob/main/scraper/README.md"
+
           gh release delete "$TAG" --repo "$GITHUB_REPO" --cleanup-tag --yes || true
-          gh release create "$TAG" "$FILE" --repo "$GITHUB_REPO" \
+          gh release create "$TAG" "$FILE" "$FILE_REVERSED" --repo "$GITHUB_REPO" \
             --title "Championship $CHAMPIONSHIP_ID" \
-            --notes "Updated: $(date -u +'%Y-%m-%d %H:%M:%S') UTC"
+            --notes "Updated: $(date -u +'%Y-%m-%d %H:%M:%S') UTC. See [Scraper README]($README_LINK) for details."

@@ -74,6 +74,9 @@ func main() {
 			// <td><a ...>Team Name</a></td>
 			teamCell := geoCell.Next()
 			team := strings.TrimSpace(teamCell.Text())
+			if team == "-" {
+				team = ""
+			}
 
 			// Class/Category is in the next td
 			// <td>Category</td>
@@ -90,9 +93,51 @@ func main() {
 		log.Printf("Found %d participants", len(records)-1)
 	}
 
-	file, err := os.Create(*outputPtr)
+	writeCSV(*outputPtr, records)
+
+	// Create second file with reversed names
+	var ext string
+	var basePath string
+	if dotIndex := strings.LastIndex(*outputPtr, "."); dotIndex != -1 {
+		basePath = (*outputPtr)[:dotIndex]
+		ext = (*outputPtr)[dotIndex:]
+	} else {
+		basePath = *outputPtr
+		ext = ""
+	}
+	outputReversePtr := basePath + "-name-reversed" + ext
+
+	// Deep copy records to avoid modifying original if we were to reuse it (though we just write it)
+	// Actually we can just traverse and create a new slice or modify on the fly?
+	// Let's create a new slice for safety.
+	recordsReverse := make([][]string, len(records))
+	for i, rec := range records {
+		newRec := make([]string, len(rec))
+		copy(newRec, rec)
+		if i > 0 { // Skip header
+			name := newRec[1]
+			parts := strings.Fields(name)
+			if len(parts) >= 2 {
+				// Swap first and last tokens, keep middle? OR just reverse order?
+				// User said: "имя и фамилию нужно менять местами" (swap name and surname)
+				// usually: First Last -> Last First.
+				// If First Middle Last -> Last First Middle ?? Or Last Middle First?
+				// Simple approach: Last + " " + (everything else)
+				last := parts[len(parts)-1]
+				rest := strings.Join(parts[:len(parts)-1], " ")
+				newRec[1] = last + " " + rest
+			}
+		}
+		recordsReverse[i] = newRec
+	}
+
+	writeCSV(outputReversePtr, recordsReverse)
+}
+
+func writeCSV(filename string, records [][]string) {
+	file, err := os.Create(filename)
 	if err != nil {
-		log.Fatalf("Failed to create output file: %v", err)
+		log.Fatalf("Failed to create output file %s: %v", filename, err)
 	}
 	defer file.Close()
 
@@ -101,9 +146,9 @@ func main() {
 
 	for _, record := range records {
 		if err := writer.Write(record); err != nil {
-			log.Fatalf("Error writing record to csv: %v", err)
+			log.Fatalf("Error writing record to csv %s: %v", filename, err)
 		}
 	}
 
-	log.Printf("Successfully wrote to %s", *outputPtr)
+	log.Printf("Successfully wrote to %s", filename)
 }

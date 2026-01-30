@@ -11,6 +11,7 @@ permissions:
 env:
   CHAMPIONSHIP_ID: "537"
   SCRAPE_URL: "https://yoklmnracing.ru/championships/537"
+  GITHUB_REPO: ${{ github.repository }}
 
 jobs:
   scrape:
@@ -20,7 +21,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download scraper-latest --pattern "scraper-linux-amd64" --clobber
+          gh release download scraper-latest --repo "$GITHUB_REPO" --pattern "scraper-linux-amd64" --clobber
           chmod +x scraper-linux-amd64
 
       - name: Run Scraper
@@ -33,7 +34,7 @@ jobs:
         run: |
           TAG="championship-${CHAMPIONSHIP_ID}"
           FILE="participants-${CHAMPIONSHIP_ID}.csv"
-          gh release delete "$TAG" --cleanup-tag --yes || true
-          gh release create "$TAG" "$FILE" \
+          gh release delete "$TAG" --repo "$GITHUB_REPO" --cleanup-tag --yes || true
+          gh release create "$TAG" "$FILE" --repo "$GITHUB_REPO" \
             --title "Championship $CHAMPIONSHIP_ID" \
             --notes "Updated: $(date -u +'%Y-%m-%d %H:%M:%S') UTC"

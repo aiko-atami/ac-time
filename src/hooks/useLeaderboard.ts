@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { fetchLeaderboard } from '@/lib/api';
 import type { ProcessedLeaderboard, CarClassRule } from '@/lib/types';
 
@@ -28,10 +28,17 @@ export function useLeaderboard(
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
-    const loadData = useCallback(async () => {
+    // Keep refs to latest values for use in interval callback
+    const serverUrlRef = useRef(serverUrl);
+    const classRulesRef = useRef(classRules);
+    serverUrlRef.current = serverUrl;
+    classRulesRef.current = classRules;
+
+    // Stable fetch function using refs
+    const loadData = async () => {
         try {
             setLoading(true);
-            const result = await fetchLeaderboard(serverUrl, classRules);
+            const result = await fetchLeaderboard(serverUrlRef.current, classRulesRef.current);
             setData(result);
             setError(null);
         } catch (err) {
@@ -40,20 +47,25 @@ export function useLeaderboard(
         } finally {
             setLoading(false);
         }
-    }, []);
+    };
 
-    // Initial load
+    // Serialize classRules for dependency comparison
+    const classRulesKey = JSON.stringify(classRules);
+
+    // Fetch on mount and when serverUrl or classRules change
     useEffect(() => {
         loadData();
-    }, [loadData]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [serverUrl, classRulesKey]);
 
-    // Auto-refresh
+    // Auto-refresh interval
     useEffect(() => {
         if (!refreshInterval) return;
 
         const interval = setInterval(loadData, refreshInterval);
         return () => clearInterval(interval);
-    }, [refreshInterval, loadData, serverUrl]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [refreshInterval]);
 
     return { data, loading, error, refetch: loadData };
 }

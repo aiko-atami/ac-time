@@ -1,8 +1,9 @@
 import { Card } from '@/components/ui/card';
 import { CarClassBadge } from './CarClassBadge';
 import { formatTime } from '@/lib/utils';
+import { cardPadding, sectorBadge } from '@/lib/styles';
+import { useLeaderboardEntry } from '@/hooks/useLeaderboardEntry';
 import type { ProcessedEntry } from '@/lib/types';
-
 import { Badge } from '@/components/ui/badge';
 
 interface LeaderboardCardProps {
@@ -12,25 +13,10 @@ interface LeaderboardCardProps {
 }
 
 export function LeaderboardCard({ entry, position, bestOverallLap }: LeaderboardCardProps) {
-    const hasSplits = entry.bestLapSplits.length > 0 || entry.splits.length > 0;
-
-    // Calculate percentage relative to best lap
-    const percentage =
-        entry.bestLap && bestOverallLap && bestOverallLap > 0
-            ? (entry.bestLap / bestOverallLap) * 100
-            : null;
-
-    let badgeClass = 'bg-muted text-muted-foreground hover:bg-muted/80';
-    if (percentage) {
-        if (percentage > 107) {
-            badgeClass = 'bg-destructive/10 text-destructive hover:bg-destructive/20 border-destructive/20';
-        } else if (percentage > 105) {
-            badgeClass = 'bg-amber-500/10 text-amber-600 dark:text-amber-500 hover:bg-amber-500/20 border-amber-500/20';
-        }
-    }
+    const { percentage, badgeClass, hasSplits } = useLeaderboardEntry(entry, bestOverallLap);
 
     return (
-        <Card className="p-2.5 sm:p-3">
+        <Card className={cardPadding.card}>
             {/* Header */}
             <div className="flex items-center gap-2 mb-2">
                 <div className="flex flex-col min-w-0 flex-1">
@@ -102,7 +88,7 @@ export function LeaderboardCard({ entry, position, bestOverallLap }: Leaderboard
                                     {entry.bestLapSplits.map((split, i) => (
                                         <span
                                             key={`best-${i}`}
-                                            className="text-xs font-mono font-medium px-2 py-0.5 rounded bg-secondary text-secondary-foreground"
+                                            className={sectorBadge.best}
                                         >
                                             {formatTime(split)}
                                         </span>
@@ -120,7 +106,7 @@ export function LeaderboardCard({ entry, position, bestOverallLap }: Leaderboard
                                     {entry.splits.map((split, i) => (
                                         <span
                                             key={`theor-${i}`}
-                                            className="text-xs font-mono font-medium px-2 py-0.5 rounded bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-100"
+                                            className={sectorBadge.theoretical}
                                         >
                                             {formatTime(split)}
                                         </span>

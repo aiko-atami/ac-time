@@ -1,4 +1,5 @@
 import { LeaderboardCard } from './LeaderboardCard';
+import { LeaderboardRow } from './LeaderboardRow';
 import type { ProcessedEntry } from '@/lib/types';
 
 interface LeaderboardProps {
@@ -25,15 +26,30 @@ export function Leaderboard({ entries }: LeaderboardProps) {
         : null;
 
     return (
-        <div className="space-y-2 sm:space-y-2.5">
-            {entries.map((entry, index) => (
-                <LeaderboardCard
-                    key={entry.id}
-                    entry={entry}
-                    position={index + 1}
-                    bestOverallLap={bestOverallLap}
-                />
-            ))}
-        </div>
+        <>
+            {/* Mobile: Cards */}
+            <div className="space-y-2 sm:space-y-2.5 md:hidden">
+                {entries.map((entry, index) => (
+                    <LeaderboardCard
+                        key={entry.id}
+                        entry={entry}
+                        position={index + 1}
+                        bestOverallLap={bestOverallLap}
+                    />
+                ))}
+            </div>
+
+            {/* Desktop: Compact Rows */}
+            <div className="hidden md:block space-y-1.5">
+                {entries.map((entry, index) => (
+                    <LeaderboardRow
+                        key={entry.id}
+                        entry={entry}
+                        position={index + 1}
+                        bestOverallLap={bestOverallLap}
+                    />
+                ))}
+            </div>
+        </>
     );
 }

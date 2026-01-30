@@ -60,7 +60,7 @@ export function App() {
         <header className="mb-4 sm:mb-5">
             <div className="flex items-start justify-between">
                 <div className="space-y-0.5 mb-1">
-                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate">
                         {data?.serverName || 'AC Live Timing'}
                     </h1>
 
@@ -144,7 +144,7 @@ export function App() {
 
     return (
         <div className="min-h-screen relative">
-            <div className="container mx-auto px-3 py-4 sm:py-5 max-w-4xl">
+            <div className="container mx-auto px-3 py-4 sm:py-5 max-w-4xl md:max-w-6xl lg:max-w-7xl">
                 {renderHeader()}
                 {renderMainContent()}
             </div>

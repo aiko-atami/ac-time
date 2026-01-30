@@ -1,0 +1,39 @@
+name: Update Participants
+
+on:
+  schedule:
+    - cron: "0 4-22 * * *" # 7:00 to 01:00 MSK
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  CHAMPIONSHIP_ID: "537"
+  SCRAPE_URL: "https://yoklmnracing.ru/championships/537"
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Scraper Binary
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download scraper-latest --pattern "scraper-linux-amd64" --clobber
+          chmod +x scraper-linux-amd64
+
+      - name: Run Scraper
+        run: |
+          ./scraper-linux-amd64 --url="$SCRAPE_URL" --output="participants-${CHAMPIONSHIP_ID}.csv"
+
+      - name: Upload to Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="championship-${CHAMPIONSHIP_ID}"
+          FILE="participants-${CHAMPIONSHIP_ID}.csv"
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          gh release create "$TAG" "$FILE" \
+            --title "Championship $CHAMPIONSHIP_ID" \
+            --notes "Updated: $(date -u +'%Y-%m-%d %H:%M:%S') UTC"

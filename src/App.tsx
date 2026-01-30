@@ -58,11 +58,11 @@ export function App() {
 
     const renderHeader = () => (
         <header className="mb-4 sm:mb-5">
-            <div className="flex items-start justify-between">
-                <div className="space-y-0.5 mb-1">
-                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate">
+            <div className="flex items-start justify-between gap-2">
+                <div className="space-y-0.5 mb-1 min-w-0 flex-1">
+                    <h2 className="text-xl sm:text-2xl md:text-3xl font-bold truncate">
                         {data?.serverName || 'AC Live Timing'}
-                    </h1>
+                    </h2>
 
                     <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                         {data?.sessionName && (

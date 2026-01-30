@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { ProcessedEntry } from '@/lib/types';
+import { useChampionshipParticipants } from './useChampionshipParticipants';
 
 type SortField = 'lapTime' | 'driver' | 'laps';
 
@@ -13,6 +14,8 @@ interface UseLeaderboardFiltersReturn {
     sortAsc: boolean;
     setSortAsc: (value: boolean) => void;
     toggleSortDirection: () => void;
+    showRegisteredOnly: boolean;
+    setShowRegisteredOnly: (value: boolean) => void;
 }
 
 /**
@@ -25,6 +28,8 @@ export function useLeaderboardFilters(
     const [selectedClass, setSelectedClass] = useState<string>('All');
     const [sortBy, setSortBy] = useState<SortField>('lapTime');
     const [sortAsc, setSortAsc] = useState(true);
+    const [showRegisteredOnly, setShowRegisteredOnly] = useState(false);
+    const { isRegistered } = useChampionshipParticipants();
 
     // Get unique car classes
     const classes = useMemo(() => {
@@ -39,6 +44,11 @@ export function useLeaderboardFilters(
         // Filter by class
         if (selectedClass !== 'All') {
             result = result.filter(e => e.carClass === selectedClass);
+        }
+
+        // Filter by registered only
+        if (showRegisteredOnly) {
+            result = result.filter(e => isRegistered(e));
         }
 
         // Sort
@@ -64,7 +74,7 @@ export function useLeaderboardFilters(
         });
 
         return result;
-    }, [entries, selectedClass, sortBy, sortAsc]);
+    }, [entries, selectedClass, sortBy, sortAsc, showRegisteredOnly, isRegistered]);
 
     const toggleSortDirection = () => setSortAsc(!sortAsc);
 
@@ -78,5 +88,7 @@ export function useLeaderboardFilters(
         sortAsc,
         setSortAsc,
         toggleSortDirection,
+        showRegisteredOnly,
+        setShowRegisteredOnly,
     };
 }

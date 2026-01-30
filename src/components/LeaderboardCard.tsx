@@ -10,9 +10,10 @@ interface LeaderboardCardProps {
     entry: ProcessedEntry;
     position: number;
     bestOverallLap: number | null;
+    isRegistered?: boolean;
 }
 
-export function LeaderboardCard({ entry, position, bestOverallLap }: LeaderboardCardProps) {
+export function LeaderboardCard({ entry, position, bestOverallLap, isRegistered }: LeaderboardCardProps) {
     const { percentage, badgeClass, hasSplits } = useLeaderboardEntry(entry, bestOverallLap);
 
     return (
@@ -25,6 +26,9 @@ export function LeaderboardCard({ entry, position, bestOverallLap }: Leaderboard
                         <h3 className="font-semibold text-sm sm:text-base truncate">
                             {entry.driverName}
                         </h3>
+                        {!isRegistered && (
+                            <span className="text-destructive font-bold text-lg leading-none">•</span>
+                        )}
                     </div>
                     {entry.teamName && (
                         <p className="text-xs text-muted-foreground truncate">

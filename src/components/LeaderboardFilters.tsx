@@ -6,6 +6,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { IconArrowUp, IconArrowDown } from '@tabler/icons-react';
 
 interface LeaderboardFiltersProps {
@@ -16,6 +17,8 @@ interface LeaderboardFiltersProps {
     onSortChange: (value: 'lapTime' | 'driver' | 'laps') => void;
     sortAsc: boolean;
     onSortDirectionToggle: () => void;
+    showRegisteredOnly: boolean;
+    onToggleRegisteredOnly: (value: boolean) => void;
 }
 
 const SORT_OPTIONS = [
@@ -32,6 +35,8 @@ export function LeaderboardFilters({
     onSortChange,
     sortAsc,
     onSortDirectionToggle,
+    showRegisteredOnly,
+    onToggleRegisteredOnly,
 }: LeaderboardFiltersProps) {
     const handleClassChange = (value: string | null) => {
         if (value) onClassChange(value);
@@ -81,6 +86,23 @@ export function LeaderboardFilters({
                         ))}
                     </SelectContent>
                 </Select>
+
+            </div>
+
+            <div className="flex-1 min-w-[120px] flex items-end">
+                <div className="flex items-center space-x-2 h-7">
+                    <Checkbox
+                        id="show-registered"
+                        checked={showRegisteredOnly}
+                        onCheckedChange={onToggleRegisteredOnly}
+                    />
+                    <label
+                        htmlFor="show-registered"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                        Registered only
+                    </label>
+                </div>
             </div>
 
             <div className="flex items-end">
@@ -97,6 +119,6 @@ export function LeaderboardFilters({
                     )}
                 </Button>
             </div>
-        </div>
+        </div >
     );
 }

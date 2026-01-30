@@ -54,6 +54,8 @@ export function App() {
         setSortBy,
         sortAsc,
         toggleSortDirection,
+        showRegisteredOnly,
+        setShowRegisteredOnly,
     } = useLeaderboardFilters(data?.leaderboard || []);
 
     const renderHeader = () => (
@@ -134,6 +136,8 @@ export function App() {
                     onSortChange={setSortBy}
                     sortAsc={sortAsc}
                     onSortDirectionToggle={toggleSortDirection}
+                    showRegisteredOnly={showRegisteredOnly}
+                    onToggleRegisteredOnly={setShowRegisteredOnly}
                 />
 
                 {/* Leaderboard */}

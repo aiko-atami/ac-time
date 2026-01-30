@@ -1,5 +1,6 @@
 import { LeaderboardCard } from './LeaderboardCard';
 import { LeaderboardRow } from './LeaderboardRow';
+import { useChampionshipParticipants } from '@/hooks/useChampionshipParticipants';
 import type { ProcessedEntry } from '@/lib/types';
 
 interface LeaderboardProps {
@@ -7,6 +8,8 @@ interface LeaderboardProps {
 }
 
 export function Leaderboard({ entries }: LeaderboardProps) {
+    const { isRegistered } = useChampionshipParticipants();
+
     if (entries.length === 0) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -21,9 +24,13 @@ export function Leaderboard({ entries }: LeaderboardProps) {
         );
     }
 
-    const bestOverallLap = entries.length > 0
-        ? Math.min(...entries.map((e) => e.bestLap || Infinity).filter((t) => t !== Infinity))
-        : null;
+    // Find overall best lap for percentage calculation
+    // Calculate the best lap from the current entries (filtered/sorted)
+    const bestOverallLap = entries.reduce((min, entry) => {
+        if (entry.bestLap === null) return min;
+        if (min === null) return entry.bestLap;
+        return entry.bestLap < min ? entry.bestLap : min;
+    }, null as number | null);
 
     return (
         <>
@@ -35,6 +42,7 @@ export function Leaderboard({ entries }: LeaderboardProps) {
                         entry={entry}
                         position={index + 1}
                         bestOverallLap={bestOverallLap}
+                        isRegistered={isRegistered(entry)}
                     />
                 ))}
             </div>
@@ -47,6 +55,7 @@ export function Leaderboard({ entries }: LeaderboardProps) {
                         entry={entry}
                         position={index + 1}
                         bestOverallLap={bestOverallLap}
+                        isRegistered={isRegistered(entry)}
                     />
                 ))}
             </div>

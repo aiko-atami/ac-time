@@ -10,9 +10,10 @@ interface LeaderboardRowProps {
     entry: ProcessedEntry;
     position: number;
     bestOverallLap: number | null;
+    isRegistered?: boolean;
 }
 
-export function LeaderboardRow({ entry, position, bestOverallLap }: LeaderboardRowProps) {
+export function LeaderboardRow({ entry, position, bestOverallLap, isRegistered }: LeaderboardRowProps) {
     const { percentage, badgeClass, tooltipText } = useLeaderboardEntry(entry, bestOverallLap);
 
     return (
@@ -25,9 +26,14 @@ export function LeaderboardRow({ entry, position, bestOverallLap }: LeaderboardR
 
                 {/* Driver + Team */}
                 <div className="flex flex-col min-w-0 w-48 shrink-0">
-                    <span className="font-semibold text-sm truncate">
-                        {entry.driverName}
-                    </span>
+                    <div className="flex items-baseline gap-1">
+                        <span className="font-semibold text-sm truncate">
+                            {entry.driverName}
+                        </span>
+                        {!isRegistered && (
+                            <span className="text-destructive font-bold leading-none">•</span>
+                        )}
+                    </div>
                     {entry.teamName && (
                         <span className="text-xs text-muted-foreground truncate">
                             {entry.teamName}

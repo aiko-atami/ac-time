@@ -28,6 +28,7 @@ championships/
 
 # Environment variables
 .env
+.env.production
 
 # Cloudflare Wrangler
 .wrangler/

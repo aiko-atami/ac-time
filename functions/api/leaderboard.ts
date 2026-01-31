@@ -1,7 +1,8 @@
 import type { CarClassRule, LeaderboardData } from '../../src/lib/types'
 import { processLeaderboard } from '../../src/lib/transform'
+import { getCorsHeaders, handleOptions } from './_cors'
 
-const TIMEOUT_MS = 10000
+const TIMEOUT_MS = 5000
 const DEFAULT_AC_API_URL = 'https://ac7.yoklmnracing.ru/api/live-timings/leaderboard.json'
 
 export async function onRequest(context: { request: Request }) {
@@ -23,17 +24,13 @@ export async function onRequest(context: { request: Request }) {
     }
   }
 
-  // 1. CORS Headers - Allow access from anywhere (or specifically localhost:5173)
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+  // Handle Preflight (OPTIONS)
+  const optionsResponse = handleOptions(request)
+  if (optionsResponse) {
+    return optionsResponse
   }
 
-  // 2. Handle Preflight (OPTIONS)
-  if (request.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
+  const corsHeaders = getCorsHeaders(request)
 
   try {
     // Validate URL

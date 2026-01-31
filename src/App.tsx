@@ -5,6 +5,7 @@ import { Leaderboard } from '@/components/Leaderboard'
 import { LeaderboardFilters } from '@/components/LeaderboardFilters'
 import { LoadingState } from '@/components/LoadingState'
 import { SettingsDialog } from '@/components/SettingsDialog'
+import { useChampionshipParticipants } from '@/hooks/useChampionshipParticipants'
 import { useLeaderboard } from '@/hooks/useLeaderboard'
 import { useLeaderboardFilters } from '@/hooks/useLeaderboardFilters'
 import { DEFAULT_CLASS_RULES, DEFAULT_REFRESH_INTERVAL, DEFAULT_SERVER_URL } from '@/lib/constants'
@@ -35,6 +36,9 @@ export function App() {
     localStorage.setItem('ac-time-car-classes', JSON.stringify(classes))
   }
 
+  // Fetch championship participants (moved from children to avoid multiple calls)
+  const { isRegistered } = useChampionshipParticipants()
+
   // Fetch leaderboard data with 60s auto-refresh
   const { data, loading, error } = useLeaderboard({
     serverUrl,
@@ -55,7 +59,7 @@ export function App() {
     toggleSortDirection,
     showRegisteredOnly,
     setShowRegisteredOnly,
-  } = useLeaderboardFilters(data?.leaderboard || [])
+  } = useLeaderboardFilters(data?.leaderboard || [], isRegistered)
 
   const renderHeader = () => (
     <header className="mb-4 sm:mb-5">
@@ -146,7 +150,7 @@ export function App() {
         />
 
         {/* Leaderboard */}
-        <Leaderboard entries={filtered} />
+        <Leaderboard entries={filtered} isRegistered={isRegistered} />
       </>
     )
   }

@@ -38,7 +38,7 @@ func main() {
 
 	var records [][]string
 	// Header
-	records = append(records, []string{"Position", "Driver", "Country", "City", "Team", "Class"})
+	records = append(records, []string{"Position", "Driver", "Country", "City", "Team", "Class", "Car"})
 
 	// Find the participants table.
 	// Based on analysis, the table contains rows with class="first" for the numbering or driver name.
@@ -83,7 +83,11 @@ func main() {
 			classCell := teamCell.Next()
 			class := strings.TrimSpace(classCell.Text())
 
-			records = append(records, []string{pos, driver, country, city, team, class})
+			// Car is in the next td
+			carCell := classCell.Next()
+			car := strings.TrimSpace(carCell.Text())
+
+			records = append(records, []string{pos, driver, country, city, team, class, car})
 		}
 	})
 

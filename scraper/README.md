@@ -4,7 +4,7 @@ This tool scrapes participant data from the Yoklmn Racing website and saves it t
 
 ## Functionality
 
-- Scrapes driver information including position, name, country, city, team, and class.
+- Scrapes driver information including position, name, country, city, team, class, and car.
 - Cleans data (e.g., removes placeholders like "-").
 - **Double Output**: Generates two CSV files:
   1. The standard `participants.csv` (or specified name).

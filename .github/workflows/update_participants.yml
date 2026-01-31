@@ -2,15 +2,15 @@ name: Update Participants
 
 on:
   schedule:
-    - cron: "0 4-22 * * *" # 7:00 to 01:00 MSK
+    - cron: '0 4-22 * * *' # 7:00 to 01:00 MSK
   workflow_dispatch:
 
 permissions:
   contents: write
 
 env:
-  CHAMPIONSHIP_ID: "537"
-  SCRAPE_URL: "https://yoklmnracing.ru/championships/537"
+  CHAMPIONSHIP_ID: '537'
+  SCRAPE_URL: 'https://yoklmnracing.ru/championships/537'
   GITHUB_REPO: ${{ github.repository }}
 
 jobs:
@@ -37,7 +37,10 @@ jobs:
           FILE_REVERSED="participants-${CHAMPIONSHIP_ID}-name-reversed.csv"
           README_LINK="https://github.com/$GITHUB_REPO/blob/main/scraper/README.md"
 
+          NOTES="Updated: $(date -u +'%Y-%m-%d %H:%M:%S') UTC.
+          See scraper [README]($README_LINK) for details."
+
           gh release delete "$TAG" --repo "$GITHUB_REPO" --cleanup-tag --yes || true
           gh release create "$TAG" "$FILE" "$FILE_REVERSED" --repo "$GITHUB_REPO" \
             --title "Championship $CHAMPIONSHIP_ID" \
-            --notes "Updated: $(date -u +'%Y-%m-%d %H:%M:%S') UTC. See [Scraper README]($README_LINK) for details."
+            --notes "$NOTES"

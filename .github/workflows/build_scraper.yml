@@ -3,7 +3,7 @@ name: Build Scraper
 on:
   push:
     paths:
-      - "scraper/**"
+      - 'scraper/**'
   workflow_dispatch:
 
 permissions:
@@ -18,7 +18,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25"
+          go-version: '1.25'
 
       - name: Build Binaries
         run: |
@@ -35,6 +35,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          README_LINK="https://github.com/${{ github.repository }}/blob/main/scraper/README.md"
+          NOTES="Auto-built from ${{ github.sha }}
+          See scraper [README]($README_LINK) for details."
+
           # Delete existing tag/release if it exists to keep "latest" fresh
           gh release delete scraper-latest --cleanup-tag --yes || true
 
@@ -43,5 +47,5 @@ jobs:
             scraper/scraper-linux-amd64 \
             scraper/scraper-win-amd64.exe \
             --title "yoklmn scraper" \
-            --notes "Auto-built from ${{ github.sha }}" \
+            --notes "$NOTES" \
             --latest

@@ -8,7 +8,8 @@
     "dev:api": "npm run build && npx wrangler pages dev ./dist",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prepare": "husky"
   },
   "dependencies": {
     "@base-ui/react": "^1.1.0",
@@ -34,8 +35,15 @@
     "eslint": "^9.39.2",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.26",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "typescript": "~5.9.3",
     "vite": "^7.2.4",
     "wrangler": "^4.61.1"
+  },
+  "lint-staged": {
+    "*.{js,ts,tsx,jsx}": [
+      "eslint --fix"
+    ]
   }
 }

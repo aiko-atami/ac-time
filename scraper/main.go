@@ -11,9 +11,17 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
+// main is the entry point of the application.
+//
+// Responsibilities:
+//   - Parse command line arguments.
+//   - Fetch and parse the HTML content from the provided URL.
+//   - Extract participant data and save it to a CSV file.
+//   - Generate a secondary CSV file with reversed driver names.
 func main() {
 	urlPtr := flag.String("url", "", "URL to scrape")
 	outputPtr := flag.String("output", "participants.csv", "Output CSV file path")
+	reverseNamePtr := flag.Bool("with-reverse-name", false, "Generate an additional CSV with reversed driver names")
 	flag.Parse()
 
 	if *urlPtr == "" {
@@ -36,30 +44,50 @@ func main() {
 		log.Fatalf("Failed to parse HTML: %v", err)
 	}
 
+	records := extractParticipants(doc)
+
+	if len(records) <= 1 {
+		log.Println("Warning: No participants found.")
+	} else {
+		log.Printf("Found %d participants", len(records)-1)
+	}
+
+	writeCSV(*outputPtr, records)
+
+	// Create second file with reversed names if requested
+	if *reverseNamePtr {
+		reversedRecords := generateReversedRecords(records)
+		outputReversePtr := getReversedFilename(*outputPtr)
+
+		writeCSV(outputReversePtr, reversedRecords)
+	}
+}
+
+// extractParticipants parses the HTML document to find and extract participant information.
+//
+// Parameters:
+//   - doc: A pointer to a goquery.Document representing the parsed HTML pages.
+//
+// Returns:
+//   - A 2D slice of strings where the first row is the header and subsequent rows
+//     contain participant details (Position, Driver, Country, City, Team, Class, Car).
+//
+// Parsing Logic:
+//   - Iterates through all table rows (`tr`).
+//   - Identifies participant rows by the presence of a cell with `data-driver-id`.
+//   - Extracts text content from specific cells relative to the driver cell.
+func extractParticipants(doc *goquery.Document) [][]string {
 	var records [][]string
 	// Header
 	records = append(records, []string{"Position", "Driver", "Country", "City", "Team", "Class", "Car"})
 
-	// Find the participants table.
-	// Based on analysis, the table contains rows with class="first" for the numbering or driver name.
-	// A more robust selector: find the row containing "Abubekirov Asker" and inspect its parents,
-	// or iterate through all trs and look for the specific structure.
-	// The grep showed: <td class="first text-end">1</td> <td class="first" data-driver-id="...">
-
 	doc.Find("tr").Each(func(i int, s *goquery.Selection) {
-		// Check if this is a participant row
-		// We look for a cell with class "first" that contains a data-driver-id attribute or similar structure
-		// The grep output showed:
-		// <td class="first text-end">1</td>
-		// <td class="first" data-driver-id="13866"><a ...>Name</a></td>
-
 		driverCell := s.Find("td[data-driver-id]")
 		if driverCell.Length() > 0 {
 			pos := strings.TrimSpace(s.Find("td.first.text-end").Text())
 			driver := strings.TrimSpace(driverCell.Text())
 
-			// Geography is in the cell after driver cell, containing flag img and text (City)
-			// <td class="first"><img ... title="Country"> City </td>
+			// Geography cell contains flag img and city text
 			geoCell := driverCell.Next()
 			country := ""
 			countryFlag := geoCell.Find("img.country-flag")
@@ -67,23 +95,19 @@ func main() {
 				country, _ = countryFlag.Attr("title")
 			}
 			city := strings.TrimSpace(geoCell.Text())
-			// city text might contain the country text if the img alt is text, but usually it's separate.
-			// The text content of geoCell includes the city name.
 
-			// Team is in the next td
-			// <td><a ...>Team Name</a></td>
+			// Team is in the next cell
 			teamCell := geoCell.Next()
 			team := strings.TrimSpace(teamCell.Text())
 			if team == "-" {
 				team = ""
 			}
 
-			// Class/Category is in the next td
-			// <td>Category</td>
+			// Class/Category is in the next cell
 			classCell := teamCell.Next()
 			class := strings.TrimSpace(classCell.Text())
 
-			// Car is in the next td
+			// Car is in the next cell
 			carCell := classCell.Next()
 			car := strings.TrimSpace(carCell.Text())
 
@@ -91,29 +115,18 @@ func main() {
 		}
 	})
 
-	if len(records) <= 1 {
-		log.Println("Warning: No participants found. Check selector logic.")
-	} else {
-		log.Printf("Found %d participants", len(records)-1)
-	}
+	return records
+}
 
-	writeCSV(*outputPtr, records)
-
-	// Create second file with reversed names
-	var ext string
-	var basePath string
-	if dotIndex := strings.LastIndex(*outputPtr, "."); dotIndex != -1 {
-		basePath = (*outputPtr)[:dotIndex]
-		ext = (*outputPtr)[dotIndex:]
-	} else {
-		basePath = *outputPtr
-		ext = ""
-	}
-	outputReversePtr := basePath + "-name-reversed" + ext
-
-	// Deep copy records to avoid modifying original if we were to reuse it (though we just write it)
-	// Actually we can just traverse and create a new slice or modify on the fly?
-	// Let's create a new slice for safety.
+// generateReversedRecords creates a new dataset with the Driver's name formatted as "Lastname Firstname ...".
+//
+// Parameters:
+//   - records: The original dataset where the second column (index 1) is the Driver's name.
+//
+// Returns:
+//   - A new 2D slice with the same data as input but with modified Driver names.
+//     The header row is preserved as is.
+func generateReversedRecords(records [][]string) [][]string {
 	recordsReverse := make([][]string, len(records))
 	for i, rec := range records {
 		newRec := make([]string, len(rec))
@@ -122,11 +135,7 @@ func main() {
 			name := newRec[1]
 			parts := strings.Fields(name)
 			if len(parts) >= 2 {
-				// Swap first and last tokens, keep middle? OR just reverse order?
-				// User said: "имя и фамилию нужно менять местами" (swap name and surname)
-				// usually: First Last -> Last First.
-				// If First Middle Last -> Last First Middle ?? Or Last Middle First?
-				// Simple approach: Last + " " + (everything else)
+				// Format: Lastname [rest of names]
 				last := parts[len(parts)-1]
 				rest := strings.Join(parts[:len(parts)-1], " ")
 				newRec[1] = last + " " + rest
@@ -134,10 +143,38 @@ func main() {
 		}
 		recordsReverse[i] = newRec
 	}
-
-	writeCSV(outputReversePtr, recordsReverse)
+	return recordsReverse
 }
 
+// getReversedFilename generates the filename for the reversed names CSV.
+//
+// Parameters:
+//   - original: The original output filename (e.g., "file.csv").
+//
+// Returns:
+//   - A string with "-name-reversed" appended before the extension (e.g., "file-name-reversed.csv").
+func getReversedFilename(original string) string {
+	var ext string
+	var basePath string
+	if dotIndex := strings.LastIndex(original, "."); dotIndex != -1 {
+		basePath = (original)[:dotIndex]
+		ext = (original)[dotIndex:]
+	} else {
+		basePath = original
+		ext = ""
+	}
+	return basePath + "-name-reversed" + ext
+}
+
+// writeCSV writes the provided records to a CSV file.
+//
+// Parameters:
+//   - filename: The path to the output file.
+//   - records: A 2D slice of strings to be written as CSV rows.
+//
+// Side Effects:
+//   - Creates or overwrites the file at `filename`.
+//   - Logs a fatal error and exits if file creation or writing fails.
 func writeCSV(filename string, records [][]string) {
 	file, err := os.Create(filename)
 	if err != nil {

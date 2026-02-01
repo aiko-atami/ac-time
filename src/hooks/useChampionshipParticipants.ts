@@ -87,11 +87,7 @@ function checkParticipantMatch(entry: ProcessedEntry, participant: Participant):
 
   // 2. Check Car Name Match
   // Must match the car name exactly (case-insensitive)
-  if (
-    entry.carName.trim().toLowerCase() !== participant.car.trim().toLowerCase()
-    // TODO: Temporary hack, remove later
-    && participant.carClass.toLowerCase() !== 'бронза'
-  ) {
+  if (entry.carName.trim().toLowerCase() !== participant.car.trim().toLowerCase()) {
     return false
   }
 

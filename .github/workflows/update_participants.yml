@@ -26,7 +26,10 @@ jobs:
 
       - name: Run Scraper
         run: |
-          ./scraper-linux-amd64 --url="$SCRAPE_URL" --output="participants-${CHAMPIONSHIP_ID}.csv"
+          ./scraper-linux-amd64 --url="$SCRAPE_URL" --output="participants-${CHAMPIONSHIP_ID}.csv" --with-reverse-name
+          # Hack: Rename car model (LADA С GT -> LADA 2118 Concept C GT)
+          sed -i 's/LADA С GT/LADA 2118 Concept C GT/g' "participants-${CHAMPIONSHIP_ID}.csv"
+          sed -i 's/LADA С GT/LADA 2118 Concept C GT/g' "participants-${CHAMPIONSHIP_ID}-name-reversed.csv"
 
       - name: Upload to Release
         env:

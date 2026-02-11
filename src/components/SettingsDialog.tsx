@@ -2,7 +2,7 @@
 // @intent: Settings modal that edits active preset and manages preset lifecycle.
 import type { SettingsPreset, SettingsSnapshot } from '@/lib/types'
 import { IconSettings } from '@tabler/icons-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,6 +48,14 @@ const EMPTY_SETTINGS: SettingsSnapshot = {
 /**
  * Renders and controls the settings dialog state.
  * @param props Settings dialog props.
+ * @param props.presets Available settings presets list.
+ * @param props.activePresetId Active preset id.
+ * @param props.activeSettings Active preset settings snapshot.
+ * @param props.onSelectPreset Selects preset by id.
+ * @param props.onCreatePreset Creates preset from snapshot and optional name.
+ * @param props.onRenameActivePreset Renames active preset.
+ * @param props.onDeleteActivePreset Deletes active preset.
+ * @param props.onSaveActivePreset Saves settings into active preset.
  * @returns Settings trigger button and dialog.
  */
 export function SettingsDialog({
@@ -78,19 +86,9 @@ export function SettingsDialog({
     setClassesCsv(formatCarClasses(safe.carClasses))
   }
 
-  useEffect(() => {
-    if (open) {
-      applySnapshotToDraft(activeSettings)
-    }
-  }, [open, activeSettings, activePresetId])
-
   const activePresetName = useMemo(() => {
     return presets.find(preset => preset.id === activePresetId)?.name ?? 'Preset'
   }, [presets, activePresetId])
-
-  useEffect(() => {
-    setPresetName(activePresetName)
-  }, [activePresetName])
 
   const serverUrlError = validateRequiredHttpUrl(serverUrl)
   const participantsCsvUrlError = validateRequiredHttpUrl(participantsCsvUrl)
@@ -104,6 +102,7 @@ export function SettingsDialog({
   const handleOpenChange = (nextOpen: boolean) => {
     if (nextOpen) {
       applySnapshotToDraft(activeSettings)
+      setPresetName(activePresetName)
     }
     setOpen(nextOpen)
   }
@@ -116,6 +115,7 @@ export function SettingsDialog({
     onSelectPreset(presetId)
     const preset = presets.find(item => item.id === presetId)
     applySnapshotToDraft(preset?.settings ?? null)
+    setPresetName(preset?.name ?? 'Preset')
   }
 
   /**

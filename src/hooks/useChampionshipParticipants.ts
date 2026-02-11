@@ -1,7 +1,7 @@
 // @anchor: leaderboard/hooks/use-championship-participants
 // @intent: Load participants list from configurable CSV URL and match leaderboard entries.
 import type { ProcessedEntry } from '@/lib/types'
-import { useEffect, useState } from 'react'
+import { useEffect, useReducer } from 'react'
 import { DEFAULT_PARTICIPANTS_CSV_URL } from '@/lib/constants'
 
 interface Participant {
@@ -26,8 +26,8 @@ interface Participant {
  * 6: Car      (e.g. "LADA Vesta NG Super-production")
  */
 async function fetchParticipantsList(participantsCsvUrl?: string): Promise<Participant[]> {
-  const url = participantsCsvUrl?.trim() || DEFAULT_PARTICIPANTS_CSV_URL
-  const response = await fetch(url)
+  const sourceUrl = participantsCsvUrl?.trim() || DEFAULT_PARTICIPANTS_CSV_URL
+  const response = await fetch(buildParticipantsProxyUrl(sourceUrl))
   if (!response.ok)
     throw new Error('Failed to fetch participants')
 
@@ -54,8 +54,54 @@ async function fetchParticipantsList(participantsCsvUrl?: string): Promise<Parti
     .filter((p): p is Participant => p !== null && !!p.driver)
 }
 
+/**
+ * Builds API URL for participants proxy endpoint.
+ * @param sourceUrl Direct CSV source URL from settings preset.
+ * @returns Relative API endpoint with encoded query parameter.
+ */
+function buildParticipantsProxyUrl(sourceUrl: string): string {
+  const search = new URLSearchParams({ csvUrl: sourceUrl })
+  return `/api/participants?${search.toString()}`
+}
+
 interface UseChampionshipParticipantsOptions {
   participantsCsvUrl?: string
+}
+
+interface ParticipantsState {
+  participants: Participant[]
+  loading: boolean
+}
+
+type ParticipantsAction
+  = | { type: 'load-start' }
+    | { type: 'load-success', participants: Participant[] }
+    | { type: 'load-failure' }
+
+/**
+ * Updates participants loading state machine.
+ * @param state Current participants state.
+ * @param action Action payload.
+ * @returns Next participants state.
+ */
+function participantsReducer(state: ParticipantsState, action: ParticipantsAction): ParticipantsState {
+  switch (action.type) {
+    case 'load-start':
+      return {
+        ...state,
+        loading: true,
+      }
+    case 'load-success':
+      return {
+        participants: action.participants,
+        loading: false,
+      }
+    case 'load-failure':
+      return {
+        participants: [],
+        loading: false,
+      }
+  }
 }
 
 /**
@@ -65,33 +111,30 @@ interface UseChampionshipParticipantsOptions {
  */
 export function useChampionshipParticipants(options: UseChampionshipParticipantsOptions = {}) {
   const { participantsCsvUrl } = options
-  const [participants, setParticipants] = useState<Participant[]>([])
-  const [loading, setLoading] = useState(true)
+  const [{ participants, loading }, dispatch] = useReducer(participantsReducer, {
+    participants: [],
+    loading: true,
+  })
 
   useEffect(() => {
-    let mounted = true
-    setLoading(true)
+    let cancelled = false
+    dispatch({ type: 'load-start' })
 
     fetchParticipantsList(participantsCsvUrl)
       .then((result) => {
-        if (mounted) {
-          setParticipants(result)
+        if (!cancelled) {
+          dispatch({ type: 'load-success', participants: result })
         }
       })
       .catch((err) => {
         console.error('Error loading participants:', err)
-        if (mounted) {
-          setParticipants([])
-        }
-      })
-      .finally(() => {
-        if (mounted) {
-          setLoading(false)
+        if (!cancelled) {
+          dispatch({ type: 'load-failure' })
         }
       })
 
     return () => {
-      mounted = false
+      cancelled = true
     }
   }, [participantsCsvUrl])
 

@@ -1,5 +1,6 @@
 // @anchor: leaderboard/app/root
 // @intent: App composition wiring settings presets, data loading and leaderboard UI.
+import type { ProcessedEntry } from '@/lib/types'
 import { ErrorState } from '@/components/ErrorState'
 import { Leaderboard } from '@/components/Leaderboard'
 import { LeaderboardFilters } from '@/components/LeaderboardFilters'
@@ -10,6 +11,8 @@ import { useChampionshipParticipants } from '@/hooks/useChampionshipParticipants
 import { useLeaderboard } from '@/hooks/useLeaderboard'
 import { useLeaderboardFilters } from '@/hooks/useLeaderboardFilters'
 import { DEFAULT_REFRESH_INTERVAL } from '@/lib/constants'
+
+const EMPTY_LEADERBOARD_ENTRIES: ProcessedEntry[] = []
 
 /**
  * Root app component.
@@ -54,7 +57,7 @@ export function App() {
     toggleSortDirection,
     showRegisteredOnly,
     setShowRegisteredOnly,
-  } = useLeaderboardFilters(data?.leaderboard || [], isRegistered)
+  } = useLeaderboardFilters(data?.leaderboard ?? EMPTY_LEADERBOARD_ENTRIES, isRegistered)
 
   /**
    * Renders app header block.

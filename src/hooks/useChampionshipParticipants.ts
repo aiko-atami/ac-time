@@ -1,6 +1,8 @@
+// @anchor: leaderboard/hooks/use-championship-participants
+// @intent: Load participants list from configurable CSV URL and match leaderboard entries.
 import type { ProcessedEntry } from '@/lib/types'
 import { useEffect, useState } from 'react'
-import { CSV_URL } from '@/lib/constants'
+import { DEFAULT_PARTICIPANTS_CSV_URL } from '@/lib/constants'
 
 interface Participant {
   driver: string
@@ -12,7 +14,7 @@ interface Participant {
 /**
  * EXPECTED CSV FORMAT
  * -------------------
- * Source: /api/participants -> GitHub Release CSV
+ * Source: participants CSV URL directly (usually GitHub Release CSV)
  *
  * Columns (0-indexed):
  * 0: Position (e.g. "1")
@@ -23,8 +25,9 @@ interface Participant {
  * 5: Class    (e.g. "Серебро")
  * 6: Car      (e.g. "LADA Vesta NG Super-production")
  */
-async function fetchParticipantsList(): Promise<Participant[]> {
-  const response = await fetch(CSV_URL)
+async function fetchParticipantsList(participantsCsvUrl?: string): Promise<Participant[]> {
+  const url = participantsCsvUrl?.trim() || DEFAULT_PARTICIPANTS_CSV_URL
+  const response = await fetch(url)
   if (!response.ok)
     throw new Error('Failed to fetch participants')
 
@@ -51,17 +54,52 @@ async function fetchParticipantsList(): Promise<Participant[]> {
     .filter((p): p is Participant => p !== null && !!p.driver)
 }
 
-export function useChampionshipParticipants() {
+interface UseChampionshipParticipantsOptions {
+  participantsCsvUrl?: string
+}
+
+/**
+ * Loads championship participants and provides registration matching utility.
+ * @param options Hook options.
+ * @returns Participants state and `isRegistered` matcher.
+ */
+export function useChampionshipParticipants(options: UseChampionshipParticipantsOptions = {}) {
+  const { participantsCsvUrl } = options
   const [participants, setParticipants] = useState<Participant[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchParticipantsList()
-      .then(setParticipants)
-      .catch(err => console.error('Error loading participants:', err))
-      .finally(() => setLoading(false))
-  }, [])
+    let mounted = true
+    setLoading(true)
 
+    fetchParticipantsList(participantsCsvUrl)
+      .then((result) => {
+        if (mounted) {
+          setParticipants(result)
+        }
+      })
+      .catch((err) => {
+        console.error('Error loading participants:', err)
+        if (mounted) {
+          setParticipants([])
+        }
+      })
+      .finally(() => {
+        if (mounted) {
+          setLoading(false)
+        }
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [participantsCsvUrl])
+
+  /**
+   * Checks whether entry exists in registered participants list.
+   * @param entry Leaderboard entry.
+   * @returns True when entry has registration match.
+   */
   const isRegistered = (entry: ProcessedEntry): boolean => {
     if (!participants.length)
       return false

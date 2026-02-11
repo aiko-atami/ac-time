@@ -1,49 +1,44 @@
-import type { CarClassRule } from '@/lib/types'
-import { useState } from 'react'
+// @anchor: leaderboard/app/root
+// @intent: App composition wiring settings presets, data loading and leaderboard UI.
 import { ErrorState } from '@/components/ErrorState'
 import { Leaderboard } from '@/components/Leaderboard'
 import { LeaderboardFilters } from '@/components/LeaderboardFilters'
 import { LoadingState } from '@/components/LoadingState'
 import { SettingsDialog } from '@/components/SettingsDialog'
+import { useSettingsPresets } from '@/features/settings/model/useSettingsPresets'
 import { useChampionshipParticipants } from '@/hooks/useChampionshipParticipants'
 import { useLeaderboard } from '@/hooks/useLeaderboard'
 import { useLeaderboardFilters } from '@/hooks/useLeaderboardFilters'
-import { DEFAULT_CLASS_RULES, DEFAULT_REFRESH_INTERVAL, DEFAULT_SERVER_URL } from '@/lib/constants'
+import { DEFAULT_REFRESH_INTERVAL } from '@/lib/constants'
 
+/**
+ * Root app component.
+ * @returns Main app layout and content.
+ */
 export function App() {
-  const [serverUrl, setServerUrl] = useState(() => {
-    return localStorage.getItem('ac-time-server-url') || DEFAULT_SERVER_URL
-  })
+  const {
+    presets,
+    activePresetId,
+    activePreset,
+    selectPreset,
+    createNewPreset,
+    renameCurrentPreset,
+    deleteCurrentPreset,
+    saveActivePresetSettings,
+  } = useSettingsPresets()
 
-  const [carClasses, setCarClasses] = useState<CarClassRule[]>(() => {
-    const saved = localStorage.getItem('ac-time-car-classes')
-    if (saved) {
-      try {
-        return JSON.parse(saved)
-      }
-      catch (e) {
-        console.error('Failed to parse saved classes', e)
-      }
-    }
-    // Default Car Class Rules (matches previous hardcoded logic)
-    return DEFAULT_CLASS_RULES
-  })
-
-  const handleSettingsSave = (url: string, classes: CarClassRule[]) => {
-    setServerUrl(url)
-    setCarClasses(classes)
-    localStorage.setItem('ac-time-server-url', url)
-    localStorage.setItem('ac-time-car-classes', JSON.stringify(classes))
-  }
+  const activeSettings = activePreset?.settings ?? null
 
   // Fetch championship participants (moved from children to avoid multiple calls)
-  const { isRegistered } = useChampionshipParticipants()
+  const { isRegistered } = useChampionshipParticipants({
+    participantsCsvUrl: activeSettings?.participants.csvUrl,
+  })
 
   // Fetch leaderboard data with 60s auto-refresh
   const { data, loading, error } = useLeaderboard({
-    serverUrl,
+    serverUrl: activeSettings?.serverUrl,
     refreshInterval: DEFAULT_REFRESH_INTERVAL,
-    classRules: carClasses,
+    classRules: activeSettings?.carClasses,
   })
 
   // Filter and sort logic
@@ -61,6 +56,10 @@ export function App() {
     setShowRegisteredOnly,
   } = useLeaderboardFilters(data?.leaderboard || [], isRegistered)
 
+  /**
+   * Renders app header block.
+   * @returns Header JSX.
+   */
   const renderHeader = () => (
     <header className="mb-4 sm:mb-5">
       <div className="flex items-start justify-between gap-2">
@@ -88,9 +87,14 @@ export function App() {
         </div>
 
         <SettingsDialog
-          serverUrl={serverUrl}
-          carClasses={carClasses}
-          onSave={handleSettingsSave}
+          presets={presets}
+          activePresetId={activePresetId}
+          activeSettings={activeSettings}
+          onSelectPreset={selectPreset}
+          onCreatePreset={createNewPreset}
+          onRenameActivePreset={renameCurrentPreset}
+          onDeleteActivePreset={deleteCurrentPreset}
+          onSaveActivePreset={saveActivePresetSettings}
         />
       </div>
 
@@ -104,6 +108,10 @@ export function App() {
     </header>
   )
 
+  /**
+   * Renders main content state machine.
+   * @returns Main content JSX by state.
+   */
   const renderMainContent = () => {
     // Loading state
     if (loading && !data) {

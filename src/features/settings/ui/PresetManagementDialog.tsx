@@ -113,6 +113,18 @@ export function PresetManagementDialog({
     setPresetName(activePresetName)
   }
 
+  /**
+   * Mirrors dialog visibility changes to parent state and initializes draft on open.
+   * @param nextOpen Next dialog visibility state.
+   */
+  const handleOpenChange = (nextOpen: boolean) => {
+    onOpenChange(nextOpen)
+    if (!nextOpen) {
+      return
+    }
+    syncDraftFromActivePreset()
+  }
+
   const serverUrlError = validateRequiredHttpUrl(serverUrl)
   const participantsCsvUrlError = validateOptionalHttpUrl(participantsCsvUrl)
   const canPersist = Boolean(activePresetId) && !serverUrlError && !participantsCsvUrlError
@@ -168,8 +180,8 @@ export function PresetManagementDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-2xl" onOpenAutoFocus={syncDraftFromActivePreset}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Preset Management</DialogTitle>
             <DialogDescription>

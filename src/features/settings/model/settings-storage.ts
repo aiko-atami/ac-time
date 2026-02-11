@@ -354,7 +354,7 @@ function parseLegacyCarClasses(raw: string | null): CarClassRule[] {
 /**
  * Normalizes class rules array.
  * @param value Untrusted class rules value.
- * @returns Valid class rules with defaults.
+ * @returns Valid class rules. Empty array means class grouping is disabled.
  */
 function normalizeCarClasses(value: unknown): CarClassRule[] {
   if (!Array.isArray(value)) {
@@ -378,7 +378,7 @@ function normalizeCarClasses(value: unknown): CarClassRule[] {
     .filter((item): item is CarClassRule => item !== null)
 
   const normalized = dedupeCarClassRules(rawRules)
-  return normalized.length > 0 ? normalized : [...DEFAULT_CLASS_RULES]
+  return normalized
 }
 
 /**

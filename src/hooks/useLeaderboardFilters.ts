@@ -24,6 +24,7 @@ interface UseLeaderboardFiltersReturn {
 export function useLeaderboardFilters(
   entries: ProcessedEntry[],
   isRegistered: (entry: ProcessedEntry) => boolean,
+  enableClassGrouping = true,
 ): UseLeaderboardFiltersReturn {
   const [selectedClass, setSelectedClass] = useState<string>('All')
   const [sortBy, setSortBy] = useState<SortField>('lapTime')
@@ -32,17 +33,23 @@ export function useLeaderboardFilters(
 
   // Get unique car classes
   const classes = useMemo(() => {
+    if (!enableClassGrouping) {
+      return ['All']
+    }
+
     const uniqueClasses = new Set(entries.map(e => e.carClass))
     return ['All', ...Array.from(uniqueClasses)]
-  }, [entries])
+  }, [entries, enableClassGrouping])
+
+  const effectiveSelectedClass = enableClassGrouping ? selectedClass : 'All'
 
   // Filter and sort data
   const filtered = useMemo(() => {
     let result = [...entries]
 
     // Filter by class
-    if (selectedClass !== 'All') {
-      result = result.filter(e => e.carClass === selectedClass)
+    if (enableClassGrouping && effectiveSelectedClass !== 'All') {
+      result = result.filter(e => e.carClass === effectiveSelectedClass)
     }
 
     // Filter by registered only
@@ -76,14 +83,14 @@ export function useLeaderboardFilters(
     })
 
     return result
-  }, [entries, selectedClass, sortBy, sortAsc, showRegisteredOnly, isRegistered])
+  }, [entries, effectiveSelectedClass, sortBy, sortAsc, showRegisteredOnly, isRegistered, enableClassGrouping])
 
   const toggleSortDirection = () => setSortAsc(!sortAsc)
 
   return {
     filtered,
     classes,
-    selectedClass,
+    selectedClass: effectiveSelectedClass,
     setSelectedClass,
     sortBy,
     setSortBy,

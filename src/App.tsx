@@ -31,6 +31,7 @@ export function App() {
   } = useSettingsPresets()
 
   const activeSettings = activePreset?.settings ?? null
+  const enableClassGrouping = (activeSettings?.carClasses.length ?? 0) > 0
 
   // Fetch championship participants (moved from children to avoid multiple calls)
   const { isRegistered } = useChampionshipParticipants({
@@ -57,7 +58,11 @@ export function App() {
     toggleSortDirection,
     showRegisteredOnly,
     setShowRegisteredOnly,
-  } = useLeaderboardFilters(data?.leaderboard ?? EMPTY_LEADERBOARD_ENTRIES, isRegistered)
+  } = useLeaderboardFilters(
+    data?.leaderboard ?? EMPTY_LEADERBOARD_ENTRIES,
+    isRegistered,
+    enableClassGrouping,
+  )
 
   /**
    * Renders app header block.

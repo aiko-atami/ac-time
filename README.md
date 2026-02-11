@@ -1,6 +1,5 @@
 # AC Live Timing
 
-![Version](https://img.shields.io/badge/version-0.0.0-blue.svg)
 ![React](https://img.shields.io/badge/React-19.2-61dafb.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)
 ![shadcn](https://img.shields.io/badge/shadcn-v3.7-black.svg)

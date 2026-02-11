@@ -6,10 +6,10 @@ import { Leaderboard } from '@/components/Leaderboard'
 import { LeaderboardFilters } from '@/components/LeaderboardFilters'
 import { LoadingState } from '@/components/LoadingState'
 import { SettingsDialog } from '@/components/SettingsDialog'
+import { useChampionshipParticipants } from '@/features/championship-participants/model/useChampionshipParticipants'
+import { useLeaderboardFilters } from '@/features/leaderboard/model/useLeaderboardFilters'
 import { useSettingsPresets } from '@/features/settings/model/useSettingsPresets'
-import { useChampionshipParticipants } from '@/hooks/useChampionshipParticipants'
 import { useLeaderboard } from '@/hooks/useLeaderboard'
-import { useLeaderboardFilters } from '@/hooks/useLeaderboardFilters'
 import { DEFAULT_REFRESH_INTERVAL } from '@/lib/constants'
 
 const EMPTY_LEADERBOARD_ENTRIES: ProcessedEntry[] = []
@@ -32,10 +32,12 @@ export function App() {
 
   const activeSettings = activePreset?.settings ?? null
   const enableClassGrouping = (activeSettings?.carClasses.length ?? 0) > 0
+  const enableParticipantsFiltering = Boolean(activeSettings?.participants.csvUrl.trim())
 
   // Fetch championship participants (moved from children to avoid multiple calls)
   const { isRegistered } = useChampionshipParticipants({
     participantsCsvUrl: activeSettings?.participants.csvUrl,
+    matchByDriverNameOnly: !enableClassGrouping,
   })
 
   // Fetch leaderboard data with 60s auto-refresh
@@ -62,6 +64,7 @@ export function App() {
     data?.leaderboard ?? EMPTY_LEADERBOARD_ENTRIES,
     isRegistered,
     enableClassGrouping,
+    enableParticipantsFiltering,
   )
 
   /**

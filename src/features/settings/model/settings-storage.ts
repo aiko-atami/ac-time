@@ -330,11 +330,28 @@ function normalizeSnapshot(snapshot: unknown): SettingsSnapshot {
     serverUrl: isValidHttpUrl(source.serverUrl) ? source.serverUrl : defaults.serverUrl,
     carClasses: normalizeCarClasses(source.carClasses),
     participants: {
-      csvUrl: isValidHttpUrl(participants?.csvUrl)
-        ? participants.csvUrl
-        : defaults.participants.csvUrl,
+      csvUrl: normalizeOptionalHttpUrl(participants?.csvUrl, defaults.participants.csvUrl),
     },
   }
+}
+
+/**
+ * Normalizes an optional HTTP/HTTPS URL value.
+ * @param value Potential URL string.
+ * @param fallback URL used for invalid non-empty values.
+ * @returns Empty string, valid URL, or fallback.
+ */
+function normalizeOptionalHttpUrl(value: unknown, fallback: string): string {
+  if (typeof value !== 'string') {
+    return fallback
+  }
+
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return ''
+  }
+
+  return isValidHttpUrl(trimmed) ? trimmed : fallback
 }
 
 /**

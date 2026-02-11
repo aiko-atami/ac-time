@@ -1,8 +1,9 @@
-// @anchor: leaderboard/hooks/use-championship-participants
+// @anchor: leaderboard/features/championship-participants/model/use-championship-participants
 // @intent: Load participants list from configurable CSV URL and match leaderboard entries.
 import type { ProcessedEntry } from '@/lib/types'
 import { useEffect, useReducer } from 'react'
-import { DEFAULT_PARTICIPANTS_CSV_URL } from '@/lib/constants'
+
+const API_URL = import.meta.env.VITE_API_URL || ''
 
 interface Participant {
   driver: string
@@ -25,8 +26,7 @@ interface Participant {
  * 5: Class    (e.g. "Серебро")
  * 6: Car      (e.g. "LADA Vesta NG Super-production")
  */
-async function fetchParticipantsList(participantsCsvUrl?: string): Promise<Participant[]> {
-  const sourceUrl = participantsCsvUrl?.trim() || DEFAULT_PARTICIPANTS_CSV_URL
+async function fetchParticipantsList(sourceUrl: string): Promise<Participant[]> {
   const response = await fetch(buildParticipantsProxyUrl(sourceUrl))
   if (!response.ok)
     throw new Error('Failed to fetch participants')
@@ -61,11 +61,12 @@ async function fetchParticipantsList(participantsCsvUrl?: string): Promise<Parti
  */
 function buildParticipantsProxyUrl(sourceUrl: string): string {
   const search = new URLSearchParams({ csvUrl: sourceUrl })
-  return `/api/participants?${search.toString()}`
+  return `${API_URL}/api/participants?${search.toString()}`
 }
 
 interface UseChampionshipParticipantsOptions {
   participantsCsvUrl?: string
+  matchByDriverNameOnly?: boolean
 }
 
 interface ParticipantsState {
@@ -110,17 +111,23 @@ function participantsReducer(state: ParticipantsState, action: ParticipantsActio
  * @returns Participants state and `isRegistered` matcher.
  */
 export function useChampionshipParticipants(options: UseChampionshipParticipantsOptions = {}) {
-  const { participantsCsvUrl } = options
+  const { participantsCsvUrl, matchByDriverNameOnly = false } = options
+  const normalizedParticipantsCsvUrl = participantsCsvUrl?.trim() ?? ''
   const [{ participants, loading }, dispatch] = useReducer(participantsReducer, {
     participants: [],
     loading: true,
   })
 
   useEffect(() => {
+    if (!normalizedParticipantsCsvUrl) {
+      dispatch({ type: 'load-success', participants: [] })
+      return
+    }
+
     let cancelled = false
     dispatch({ type: 'load-start' })
 
-    fetchParticipantsList(participantsCsvUrl)
+    fetchParticipantsList(normalizedParticipantsCsvUrl)
       .then((result) => {
         if (!cancelled) {
           dispatch({ type: 'load-success', participants: result })
@@ -136,7 +143,7 @@ export function useChampionshipParticipants(options: UseChampionshipParticipants
     return () => {
       cancelled = true
     }
-  }, [participantsCsvUrl])
+  }, [normalizedParticipantsCsvUrl])
 
   /**
    * Checks whether entry exists in registered participants list.
@@ -146,7 +153,7 @@ export function useChampionshipParticipants(options: UseChampionshipParticipants
   const isRegistered = (entry: ProcessedEntry): boolean => {
     if (!participants.length)
       return false
-    return participants.some(p => checkParticipantMatch(entry, p))
+    return participants.some(p => checkParticipantMatch(entry, p, matchByDriverNameOnly))
   }
 
   return { participants, loading, isRegistered }
@@ -156,23 +163,24 @@ export function useChampionshipParticipants(options: UseChampionshipParticipants
  * Checks if a live server entry matches a registered participant.
  *
  * Logic matches:
- * 1. Car Class (exact, case-insensitive)
- * 2. Car Name (exact, case-insensitive)
- * 3. Driver Name (word-set equality, case-insensitive, order-independent)
+ * 1. Driver Name (word-set equality, case-insensitive, order-independent)
+ * 2. Car Class and Car Name checks are optional and enabled when classes are configured
  */
-function checkParticipantMatch(entry: ProcessedEntry, participant: Participant): boolean {
-  // 1. Check Car Class Match
-  if (entry.carClass.toLowerCase() !== participant.carClass.toLowerCase()) {
-    return false
+function checkParticipantMatch(
+  entry: ProcessedEntry,
+  participant: Participant,
+  matchByDriverNameOnly: boolean,
+): boolean {
+  if (!matchByDriverNameOnly) {
+    if (entry.carClass.toLowerCase() !== participant.carClass.toLowerCase()) {
+      return false
+    }
+
+    if (entry.carName.trim().toLowerCase() !== participant.car.trim().toLowerCase()) {
+      return false
+    }
   }
 
-  // 2. Check Car Name Match
-  // Must match the car name exactly (case-insensitive)
-  if (entry.carName.trim().toLowerCase() !== participant.car.trim().toLowerCase()) {
-    return false
-  }
-
-  // 3. Check Driver Name Match (Order Independent)
   const entryNameParts = entry.driverName.toLowerCase().split(/\s+/).filter(p => p.length > 0)
   const pNameParts = participant.driver.toLowerCase().split(/\s+/).filter(p => p.length > 0)
 

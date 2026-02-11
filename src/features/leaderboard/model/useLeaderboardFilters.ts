@@ -1,3 +1,5 @@
+// @anchor: leaderboard/features/leaderboard/model/use-leaderboard-filters
+// @intent: Provide client-side class/registration filters and sorting for leaderboard entries.
 import type { ProcessedEntry } from '@/lib/types'
 import { useMemo, useState } from 'react'
 
@@ -25,6 +27,7 @@ export function useLeaderboardFilters(
   entries: ProcessedEntry[],
   isRegistered: (entry: ProcessedEntry) => boolean,
   enableClassGrouping = true,
+  enableParticipantsFiltering = true,
 ): UseLeaderboardFiltersReturn {
   const [selectedClass, setSelectedClass] = useState<string>('All')
   const [sortBy, setSortBy] = useState<SortField>('lapTime')
@@ -53,7 +56,7 @@ export function useLeaderboardFilters(
     }
 
     // Filter by registered only
-    if (showRegisteredOnly) {
+    if (showRegisteredOnly && enableParticipantsFiltering) {
       result = result.filter(e => isRegistered(e))
     }
 
@@ -83,7 +86,7 @@ export function useLeaderboardFilters(
     })
 
     return result
-  }, [entries, effectiveSelectedClass, sortBy, sortAsc, showRegisteredOnly, isRegistered, enableClassGrouping])
+  }, [entries, effectiveSelectedClass, sortBy, sortAsc, showRegisteredOnly, isRegistered, enableClassGrouping, enableParticipantsFiltering])
 
   const toggleSortDirection = () => setSortAsc(!sortAsc)
 

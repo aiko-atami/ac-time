@@ -119,7 +119,7 @@ export function PresetManagementDialog({
   }
 
   const serverUrlError = validateRequiredHttpUrl(serverUrl)
-  const participantsCsvUrlError = validateRequiredHttpUrl(participantsCsvUrl)
+  const participantsCsvUrlError = validateOptionalHttpUrl(participantsCsvUrl)
   const canPersist = Boolean(activePresetId) && !serverUrlError && !participantsCsvUrlError
   const canCreate = !serverUrlError && !participantsCsvUrlError
 
@@ -284,6 +284,19 @@ export function PresetManagementDialog({
 function validateRequiredHttpUrl(value: string): string | null {
   if (!value.trim()) {
     return 'URL is required.'
+  }
+
+  return validateOptionalHttpUrl(value)
+}
+
+/**
+ * Validates optional HTTP URL input used in preset forms.
+ * @param value URL string from input.
+ * @returns Validation error text or null when valid/empty.
+ */
+function validateOptionalHttpUrl(value: string): string | null {
+  if (!value.trim()) {
+    return null
   }
 
   try {

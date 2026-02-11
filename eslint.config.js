@@ -2,7 +2,7 @@ import antfu from '@antfu/eslint-config'
 
 export default antfu({
   react: true,
-  ignores: ['.agent/**'],
+  ignores: ['.agents/**'],
 }, {
   rules: {
     // Shadcn UI components often export variants/constants

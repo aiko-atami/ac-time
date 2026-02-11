@@ -106,16 +106,11 @@ export function PresetManagementDialog({
   }, [presets, activePresetId])
 
   /**
-   * Handles management dialog open state updates.
-   * When opening, local draft is initialized from current active preset snapshot.
-   * @param nextOpen Next open state requested by dialog primitive.
+   * Synchronizes local draft inputs with current active preset payload.
    */
-  const handleDialogOpenChange = (nextOpen: boolean) => {
-    if (nextOpen) {
-      applySnapshotToDraft(activeSettings)
-      setPresetName(activePresetName)
-    }
-    onOpenChange(nextOpen)
+  const syncDraftFromActivePreset = () => {
+    applySnapshotToDraft(activeSettings)
+    setPresetName(activePresetName)
   }
 
   const serverUrlError = validateRequiredHttpUrl(serverUrl)
@@ -173,8 +168,8 @@ export function PresetManagementDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={handleDialogOpenChange}>
-        <DialogContent className="sm:max-w-2xl">
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-2xl" onOpenAutoFocus={syncDraftFromActivePreset}>
           <DialogHeader>
             <DialogTitle>Preset Management</DialogTitle>
             <DialogDescription>

@@ -2,7 +2,6 @@
 // @intent: Proxy participants CSV from configurable source URL with CORS headers.
 import { getCorsHeaders, handleOptions } from './_cors'
 
-const DEFAULT_CSV_URL = 'https://github.com/aiko-atami/ac-time/releases/download/championship-537/participants-537.csv'
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 
 /**
@@ -54,25 +53,41 @@ function isHtmlPayload(contentType: string | null, body: string): boolean {
 /**
  * Resolves target CSV URL from request query string.
  * @param request Incoming request object.
- * @returns Valid source URL and optional validation error.
+ * @returns Valid source URL or null when query parameter is absent/invalid.
  */
-function resolveCsvUrl(request: Request): { csvUrl: string, error: string | null } {
+function resolveCsvUrl(request: Request): string | null {
   const requestUrl = new URL(request.url)
   const rawCsvUrl = requestUrl.searchParams.get('csvUrl')?.trim()
   if (!rawCsvUrl) {
-    return { csvUrl: DEFAULT_CSV_URL, error: null }
+    return null
   }
 
   try {
     const parsed = new URL(rawCsvUrl)
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      return { csvUrl: DEFAULT_CSV_URL, error: 'Invalid csvUrl: only http/https are allowed.' }
+      return null
     }
-    return { csvUrl: parsed.toString(), error: null }
+    return parsed.toString()
   }
   catch {
-    return { csvUrl: DEFAULT_CSV_URL, error: 'Invalid csvUrl query parameter.' }
+    return null
   }
+}
+
+/**
+ * Builds an empty CSV response to keep client participant list safely empty on errors.
+ * @param corsHeaders CORS headers for the current request origin.
+ * @returns Empty CSV response with no-store caching.
+ */
+function createEmptyCsvResponse(corsHeaders: HeadersInit): Response {
+  return new Response('', {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Cache-Control': 'no-store',
+      ...corsHeaders,
+    },
+  })
 }
 
 /**
@@ -91,13 +106,9 @@ export async function onRequest(context: { request: Request }) {
   }
 
   const corsHeaders = getCorsHeaders(request)
-  const { csvUrl, error } = resolveCsvUrl(request)
-
-  if (error) {
-    return new Response(error, {
-      status: 400,
-      headers: corsHeaders,
-    })
+  const csvUrl = resolveCsvUrl(request)
+  if (!csvUrl) {
+    return createEmptyCsvResponse(corsHeaders)
   }
 
   try {
@@ -110,32 +121,23 @@ export async function onRequest(context: { request: Request }) {
     })
 
     if (!response.ok) {
-      return new Response(`Failed to fetch CSV: ${response.statusText}`, {
-        status: response.status,
-        headers: corsHeaders,
-      })
+      return createEmptyCsvResponse(corsHeaders)
     }
 
     const data = await response.text()
     if (isHtmlPayload(response.headers.get('Content-Type'), data)) {
-      return new Response('Source URL returned HTML instead of CSV. Use a direct raw/download CSV URL.', {
-        status: 422,
-        headers: corsHeaders,
-      })
+      return createEmptyCsvResponse(corsHeaders)
     }
 
     return new Response(data, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Cache-Control': 'public, max-age=300', // Cache for 5 minutes
+        'Cache-Control': 'no-store',
         ...corsHeaders,
       },
     })
   }
-  catch (err) {
-    return new Response(`Server error: ${err}`, {
-      status: 500,
-      headers: corsHeaders,
-    })
+  catch {
+    return createEmptyCsvResponse(corsHeaders)
   }
 }

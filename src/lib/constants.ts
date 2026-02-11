@@ -2,7 +2,7 @@
 // @intent: Shared constants for defaults, API endpoints, and localStorage keys.
 import type { CarClassRule } from './types'
 
-export const DEFAULT_PARTICIPANTS_CSV_URL = 'https://github.com/aiko-atami/ac-time/releases/download/championship-537/participants-537.csv'
+export const DEFAULT_PARTICIPANTS_CSV_URL = ''
 
 export const LEGACY_SERVER_URL_KEY = 'ac-time-server-url'
 export const LEGACY_CAR_CLASSES_KEY = 'ac-time-car-classes'

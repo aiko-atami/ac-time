@@ -10,6 +10,10 @@
 - ESM only, Node.js LTS
 
 ## Architecture Rules (FSD-lite, strict)
+0. Current project structure is not final:
+   - There is no fully settled structure yet.
+   - During refactoring and while adding new features, always review the structure of edited files.
+   - If structure looks incorrect relative to FSD patterns, fix it as part of the task.
 1. New code must follow FSD-lite layers:
    - `src/app`, `src/pages`, `src/widgets`, `src/features`, `src/entities`, `src/shared`
 2. UI components are dumb:

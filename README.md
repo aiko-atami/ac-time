@@ -6,21 +6,18 @@
 ![shadcn](https://img.shields.io/badge/shadcn-v3.7-black.svg)
 ![Cloudflare](https://img.shields.io/badge/Cloudflare_Pages-Orange.svg)
 
-A modern, responsive leaderboard for Assetto Corsa Competizione servers. Built with **React**, **Vite**, **shadcn/ui**, and powered by **Cloudflare Pages Functions**.
+A modern, responsive leaderboard for Assetto Corsa servers. Built with **React**, **Vite**, **shadcn/ui**, and powered by **Cloudflare Pages Functions**.
 
-It acts as a smart wrapper around the raw Assetto Corsa server API, providing a beautiful, user-friendly interface with advanced features like gap analysis, dynamic filtering, and mobile optimizations.
+It acts as a smart wrapper around the raw Assetto Corsa server API, providing a clean, user-friendly interface for live timing.
 
 ## ✨ Features
 
 - 🏎️ **Live Timing**: Real-time position, lap times, and sector splits.
 - 📊 **Advanced Analytics**:
   - **107% Rule**: Visual indicators (Orange > 105%, Red > 107%) for qualification pace analysis.
-  - **Dynamic Gaps**: Calculates time differences relative to the current leader or filters.
   - **Theoretical Best**: Calculates potential best lap times based on sector splits.
-- 🎯 **Filtering & Sorting**:
-  - Filter by Car Class (GT3, GT4, Porsche Cup, etc.).
+- 🎯 **Sorting**:
   - Sort by Lap Time, Consistency, Driver Name, or Lap Count.
-- 📱 **Mobile-First Design**: Responsive card-based UI that adapts to any screen size.
 - 🏰 **Cloudflare Integration**: Serverless API via Cloudflare Functions to handle CORS and data transformation securely.
 - 🎨 **Modern API**: shadcn/ui components with a clean, professional aesthetic.
 
@@ -56,7 +53,7 @@ It acts as a smart wrapper around the raw Assetto Corsa server API, providing a 
    ```env
    # The URL of your raw Assetto Corsa server JSON output
    API_URL=http://your-server-ip:port/results.json
-   
+
    # Optional: Basic Auth if your server requires it
    BASIC_AUTH_USER=username
    BASIC_AUTH_PASS=password
@@ -126,4 +123,4 @@ The application uses **Cloudflare Pages Functions** to bridge the gap between th
 
 ## 📜 License
 
-[MIT](LICENSE)
+[GPL-3.0](LICENSE)

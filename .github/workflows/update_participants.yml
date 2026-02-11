@@ -2,20 +2,26 @@ name: Update Participants
 
 on:
   schedule:
-    - cron: '0 4-22 * * *' # 7:00 to 01:00 MSK
+    # GitHub cron is in UTC. 05:00–21:00 UTC.
+    - cron: '0 5-21/2 * * *' # every 2 hours, 05:00–21:00 UTC
   workflow_dispatch:
 
 permissions:
   contents: write
 
 env:
-  CHAMPIONSHIP_ID: '537'
-  SCRAPE_URL: 'https://yoklmnracing.ru/championships/537'
   GITHUB_REPO: ${{ github.repository }}
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - championship_id: '537'
+            scrape_url: 'https://yoklmnracing.ru/championships/537'
+          - championship_id: '538'
+            scrape_url: 'https://yoklmnracing.ru/championships/538'
     steps:
       - name: Download Scraper Binary
         env:
@@ -26,15 +32,20 @@ jobs:
 
       - name: Run Scraper
         run: |
+          CHAMPIONSHIP_ID='${{ matrix.championship_id }}'
+          SCRAPE_URL='${{ matrix.scrape_url }}'
           ./scraper-linux-amd64 --url="$SCRAPE_URL" --output="participants-${CHAMPIONSHIP_ID}.csv" --with-reverse-name
           # Hack: Rename car model (LADA С GT -> LADA 2118 Concept C GT)
-          sed -i 's/LADA С GT/LADA 2118 Concept C GT/g' "participants-${CHAMPIONSHIP_ID}.csv"
-          sed -i 's/LADA С GT/LADA 2118 Concept C GT/g' "participants-${CHAMPIONSHIP_ID}-name-reversed.csv"
+          if [ "$CHAMPIONSHIP_ID" = "537" ]; then
+            sed -i 's/LADA С GT/LADA 2118 Concept C GT/g' "participants-${CHAMPIONSHIP_ID}.csv"
+            sed -i 's/LADA С GT/LADA 2118 Concept C GT/g' "participants-${CHAMPIONSHIP_ID}-name-reversed.csv"
+          fi
 
       - name: Upload to Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          CHAMPIONSHIP_ID='${{ matrix.championship_id }}'
           TAG="championship-${CHAMPIONSHIP_ID}"
           FILE="participants-${CHAMPIONSHIP_ID}.csv"
           FILE_REVERSED="participants-${CHAMPIONSHIP_ID}-name-reversed.csv"

@@ -56,6 +56,7 @@
 ## Quality and Tests
 - Linting and formatting are mandatory.
 - Use existing ESLint setup (`npm run lint`).
+- Run ESLint only for files that were edited in the current task.
 - Tests only for critical units of logic; keep them small and focused.
 
 ## Git Conventions

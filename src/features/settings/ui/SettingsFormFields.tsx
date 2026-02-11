@@ -18,6 +18,14 @@ interface SettingsFormFieldsProps {
 /**
  * Renders editable fields for server URL, participants CSV URL and class rules.
  * @param props Form field props.
+ * @param props.serverUrl Current server URL input value.
+ * @param props.participantsCsvUrl Current participants CSV URL input value.
+ * @param props.classesText Current multiline car classes input value.
+ * @param props.serverUrlError Optional validation error text for server URL field.
+ * @param props.participantsCsvUrlError Optional validation error text for participants CSV URL field.
+ * @param props.onServerUrlChange Callback invoked on server URL input change.
+ * @param props.onParticipantsCsvUrlChange Callback invoked on participants CSV URL input change.
+ * @param props.onClassesTextChange Callback invoked on car classes textarea change.
  * @returns Settings form fields block.
  */
 export function SettingsFormFields({
@@ -39,12 +47,18 @@ export function SettingsFormFields({
         <div className="col-span-3 grid gap-1">
           <Input
             id="server-url"
+            name="serverUrl"
+            type="url"
+            autoComplete="url"
             value={serverUrl}
             onChange={e => onServerUrlChange(e.target.value)}
             aria-invalid={Boolean(serverUrlError)}
+            aria-describedby={serverUrlError ? 'server-url-error' : undefined}
           />
           {serverUrlError && (
-            <p className="text-xs text-destructive">{serverUrlError}</p>
+            <p id="server-url-error" className="text-xs text-destructive" aria-live="polite">
+              {serverUrlError}
+            </p>
           )}
         </div>
       </div>
@@ -56,12 +70,18 @@ export function SettingsFormFields({
         <div className="col-span-3 grid gap-1">
           <Input
             id="participants-csv-url"
+            name="participantsCsvUrl"
+            type="url"
+            autoComplete="url"
             value={participantsCsvUrl}
             onChange={e => onParticipantsCsvUrlChange(e.target.value)}
             aria-invalid={Boolean(participantsCsvUrlError)}
+            aria-describedby={participantsCsvUrlError ? 'participants-csv-url-error' : undefined}
           />
           {participantsCsvUrlError && (
-            <p className="text-xs text-destructive">{participantsCsvUrlError}</p>
+            <p id="participants-csv-url-error" className="text-xs text-destructive" aria-live="polite">
+              {participantsCsvUrlError}
+            </p>
           )}
         </div>
       </div>
@@ -73,12 +93,14 @@ export function SettingsFormFields({
         <div className="col-span-3">
           <Textarea
             id="classes"
+            name="carClasses"
             value={classesText}
             onChange={e => onClassesTextChange(e.target.value)}
             placeholder="Super Production: SUPER-PRODUCTION&#10;Lada C GT: Concept C GT, Lada CGT"
             rows={7}
+            aria-describedby="car-classes-help"
           />
-          <p className="mt-1 text-[0.8rem] text-muted-foreground">
+          <p id="car-classes-help" className="mt-1 text-[0.8rem] text-muted-foreground">
             One class per line:
             {' '}
             <code>ClassName: pattern1, pattern2</code>

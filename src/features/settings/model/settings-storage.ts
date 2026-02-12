@@ -5,10 +5,6 @@ import {
   DEFAULT_CLASS_RULES,
   DEFAULT_PARTICIPANTS_CSV_URL,
   DEFAULT_SERVER_URL,
-  DEFAULT_SETTINGS_PRESET_NAME,
-  LEGACY_CAR_CLASSES_KEY,
-  LEGACY_PARTICIPANTS_CSV_URL_KEY,
-  LEGACY_SERVER_URL_KEY,
   LEGACY_SETTINGS_PRESETS_STORAGE_KEY,
   SETTINGS_PRESETS_STORAGE_KEY,
 } from '@/lib/constants'
@@ -48,9 +44,9 @@ export function loadSettingsPresetsState(): SettingsPresetsState {
     }
   }
 
-  const migrated = migrateLegacyState()
-  saveSettingsPresetsState(migrated)
-  return migrated
+  const defaults = createDefaultPresetsState()
+  saveSettingsPresetsState(defaults)
+  return defaults
 }
 
 /**
@@ -219,38 +215,63 @@ function safeParseJson(raw: string): unknown | null {
 }
 
 /**
- * Migrates legacy storage keys into the presets schema.
- * @returns Migrated state with one default preset.
+ * Creates initial presets state for first-time users.
+ * @returns Default presets state.
  */
-function migrateLegacyState(): SettingsPresetsState {
-  const legacyServerUrl = localStorage.getItem(LEGACY_SERVER_URL_KEY)
-  const legacyCarClassesRaw = localStorage.getItem(LEGACY_CAR_CLASSES_KEY)
-  const legacyParticipantsCsvUrl = localStorage.getItem(LEGACY_PARTICIPANTS_CSV_URL_KEY)
-
-  const legacyCarClasses = parseLegacyCarClasses(legacyCarClassesRaw)
-  const snapshot: SettingsSnapshot = {
-    serverUrl: isValidHttpUrl(legacyServerUrl) ? legacyServerUrl : DEFAULT_SERVER_URL,
-    carClasses: legacyCarClasses,
-    participants: {
-      csvUrl: isValidHttpUrl(legacyParticipantsCsvUrl)
-        ? legacyParticipantsCsvUrl
-        : DEFAULT_PARTICIPANTS_CSV_URL,
-    },
-  }
-
-  const now = new Date().toISOString()
-  const preset: SettingsPreset = {
-    id: createPresetId(),
-    name: DEFAULT_SETTINGS_PRESET_NAME,
-    settings: snapshot,
-    createdAt: now,
-    updatedAt: now,
-  }
-
+function createDefaultPresetsState(): SettingsPresetsState {
   return {
     version: SETTINGS_PRESETS_VERSION,
-    activePresetId: preset.id,
-    presets: [preset],
+    activePresetId: '9d5388f6-2867-4cf5-801d-c883706d82c1',
+    presets: [
+      {
+        id: '9d5388f6-2867-4cf5-801d-c883706d82c1',
+        name: 'AC7 Gold',
+        settings: {
+          serverUrl: 'https://ac7.yoklmnracing.ru/api/live-timings/leaderboard.json',
+          carClasses: [],
+          participants: {
+            csvUrl: 'https://github.com/aiko-atami/ac-time/releases/download/championship-537/participants-537.csv',
+          },
+        },
+        createdAt: '2026-02-11T15:18:33.712Z',
+        updatedAt: '2026-02-12T12:35:52.401Z',
+      },
+      {
+        id: 'e4606c07-42c7-4ab1-86b9-639e1ddfd3ea',
+        name: 'AC8 Bronze Silver',
+        settings: {
+          serverUrl: 'https://ac8.yoklmnracing.ru/api/live-timings/leaderboard.json',
+          carClasses: [
+            {
+              name: 'Серебро',
+              patterns: ['SUPER-PRODUCTION'],
+            },
+            {
+              name: 'Бронза',
+              patterns: ['LADA 2118 Concept C GT'],
+            },
+          ],
+          participants: {
+            csvUrl: 'https://github.com/aiko-atami/ac-time/releases/download/championship-537/participants-537.csv',
+          },
+        },
+        createdAt: '2026-02-11T15:19:13.081Z',
+        updatedAt: '2026-02-12T12:36:05.889Z',
+      },
+      {
+        id: 'c1a34007-0e08-41e7-8e48-dd5312fef72d',
+        name: 'AC9',
+        settings: {
+          serverUrl: 'https://ac9.yoklmnracing.ru/api/live-timings/leaderboard.json',
+          carClasses: [],
+          participants: {
+            csvUrl: 'https://github.com/aiko-atami/ac-time/releases/download/championship-538/participants-538.csv',
+          },
+        },
+        createdAt: '2026-02-11T15:25:05.113Z',
+        updatedAt: '2026-02-12T12:36:57.429Z',
+      },
+    ],
   }
 }
 
@@ -260,7 +281,7 @@ function migrateLegacyState(): SettingsPresetsState {
  * @returns Sanitized state.
  */
 function normalizeState(value: unknown): SettingsPresetsState {
-  const fallback = migrateLegacyState()
+  const fallback = createDefaultPresetsState()
   if (!value || typeof value !== 'object') {
     return fallback
   }
@@ -352,20 +373,6 @@ function normalizeOptionalHttpUrl(value: unknown, fallback: string): string {
   }
 
   return isValidHttpUrl(trimmed) ? trimmed : fallback
-}
-
-/**
- * Parses and normalizes legacy class rules.
- * @param raw Legacy JSON string.
- * @returns Car class rules.
- */
-function parseLegacyCarClasses(raw: string | null): CarClassRule[] {
-  if (!raw) {
-    return [...DEFAULT_CLASS_RULES]
-  }
-
-  const parsed = safeParseJson(raw)
-  return normalizeCarClasses(parsed)
 }
 
 /**

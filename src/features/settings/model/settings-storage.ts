@@ -225,7 +225,7 @@ function safeParseJson(raw: string): unknown | null {
 function createDefaultPresetsState(): SettingsPresetsState {
   return {
     version: SETTINGS_PRESETS_VERSION,
-    activePresetId: '9d5388f6-2867-4cf5-801d-c883706d82c1',
+    activePresetId: 'e4606c07-42c7-4ab1-86b9-639e1ddfd3ea',
     presets: [
       {
         id: '9d5388f6-2867-4cf5-801d-c883706d82c1',
@@ -239,7 +239,7 @@ function createDefaultPresetsState(): SettingsPresetsState {
           pacePercentThreshold: DEFAULT_PACE_PERCENT_THRESHOLD,
         },
         createdAt: '2026-02-11T15:18:33.712Z',
-        updatedAt: '2026-02-12T12:35:52.401Z',
+        updatedAt: '2026-02-12T13:50:56.830Z',
       },
       {
         id: 'e4606c07-42c7-4ab1-86b9-639e1ddfd3ea',
@@ -252,7 +252,11 @@ function createDefaultPresetsState(): SettingsPresetsState {
               patterns: ['SUPER-PRODUCTION'],
             },
             {
-              name: 'Бронза',
+              name: 'Бронза 1',
+              patterns: ['LADA 2118 Concept C GT'],
+            },
+            {
+              name: 'Бронза 2',
               patterns: ['LADA 2118 Concept C GT'],
             },
           ],
@@ -262,7 +266,7 @@ function createDefaultPresetsState(): SettingsPresetsState {
           pacePercentThreshold: DEFAULT_PACE_PERCENT_THRESHOLD,
         },
         createdAt: '2026-02-11T15:19:13.081Z',
-        updatedAt: '2026-02-12T12:36:05.889Z',
+        updatedAt: '2026-02-12T13:51:10.017Z',
       },
       {
         id: 'c1a34007-0e08-41e7-8e48-dd5312fef72d',

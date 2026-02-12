@@ -1,5 +1,5 @@
 import type { CarClassRule, LeaderboardData } from '../../src/lib/types'
-import { processLeaderboard } from '../../src/lib/transform'
+import { processLeaderboard } from '../../src/shared/lib/transform'
 import { getCorsHeaders, handleOptions } from './_cors'
 
 const TIMEOUT_MS = 5000

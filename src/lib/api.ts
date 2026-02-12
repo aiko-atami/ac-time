@@ -1,4 +1,5 @@
 import type { CarClassRule, ProcessedLeaderboard } from './types'
+import { normalizeDriverName } from '@/shared/lib/driver-name'
 import { mockLeaderboardData } from './mockData'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
@@ -52,8 +53,15 @@ export async function fetchLeaderboard(
       throw new Error(`API returned ${response.status}: ${response.statusText}`)
     }
 
-    const data = await response.json()
-    return data as ProcessedLeaderboard
+    const data = await response.json() as ProcessedLeaderboard
+
+    return {
+      ...data,
+      leaderboard: data.leaderboard.map(entry => ({
+        ...entry,
+        driverName: normalizeDriverName(entry.driverName),
+      })),
+    }
   }
   catch (error) {
     console.error('Error fetching leaderboard:', error)

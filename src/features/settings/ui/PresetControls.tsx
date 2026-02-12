@@ -13,7 +13,7 @@ import {
 
 interface PresetControlsProps {
   presets: SettingsPreset[]
-  activePresetId: string | null
+  selectedPresetId: string | null
   onSelectPreset: (presetId: string) => void
   onManagePresets: () => void
 }
@@ -22,28 +22,28 @@ interface PresetControlsProps {
  * Renders preset selection and opens dedicated preset management dialog.
  * @param props Preset controls props.
  * @param props.presets Available preset options.
- * @param props.activePresetId Currently active preset id.
+ * @param props.selectedPresetId Currently selected preset id in quick settings draft.
  * @param props.onSelectPreset Called when user selects a preset from dropdown.
  * @param props.onManagePresets Opens separate preset management dialog.
  * @returns Preset controls block.
  */
 export function PresetControls({
   presets,
-  activePresetId,
+  selectedPresetId,
   onSelectPreset,
   onManagePresets,
 }: PresetControlsProps) {
-  const activePresetName = presets.find(preset => preset.id === activePresetId)?.name
+  const selectedPresetName = presets.find(preset => preset.id === selectedPresetId)?.name
 
   return (
     <div className="grid gap-4">
       <div className="grid gap-1.5">
-        <Label id="settings-preset-label">Active preset</Label>
+        <Label id="settings-preset-label">Selected preset</Label>
         <div className="flex items-center gap-2">
-          <Select value={activePresetId ?? undefined} onValueChange={value => value && onSelectPreset(value)}>
+          <Select value={selectedPresetId ?? undefined} onValueChange={value => value && onSelectPreset(value)}>
             <SelectTrigger aria-labelledby="settings-preset-label" className="w-full">
               <SelectValue placeholder="Select preset">
-                {activePresetName}
+                {selectedPresetName}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>

@@ -19,9 +19,9 @@ interface UseSettingsPresetsReturn {
   activePreset: SettingsPreset | null
   selectPreset: (presetId: string) => void
   createNewPreset: (settings: SettingsSnapshot, name?: string) => void
-  renameCurrentPreset: (name: string) => void
-  deleteCurrentPreset: () => void
-  saveActivePresetSettings: (settings: SettingsSnapshot) => void
+  renamePresetById: (presetId: string, name: string) => void
+  deletePresetById: (presetId: string) => void
+  savePresetSettingsById: (presetId: string, settings: SettingsSnapshot) => void
 }
 
 /**
@@ -64,38 +64,29 @@ export function useSettingsPresets(): UseSettingsPresetsReturn {
   }
 
   /**
-   * Renames the currently active preset.
+   * Renames a specific preset.
+   * @param presetId Target preset id.
    * @param name New preset name.
    */
-  const renameCurrentPreset = (name: string) => {
-    if (!state.activePresetId) {
-      return
-    }
-
-    commitState(current => renamePreset(current, current.activePresetId ?? '', name))
+  const renamePresetById = (presetId: string, name: string) => {
+    commitState(current => renamePreset(current, presetId, name))
   }
 
   /**
-   * Deletes the currently active preset.
+   * Deletes a specific preset.
+   * @param presetId Target preset id.
    */
-  const deleteCurrentPreset = () => {
-    if (!state.activePresetId) {
-      return
-    }
-
-    commitState(current => deletePreset(current, current.activePresetId ?? ''))
+  const deletePresetById = (presetId: string) => {
+    commitState(current => deletePreset(current, presetId))
   }
 
   /**
-   * Saves settings to the active preset.
+   * Saves settings to a specific preset.
+   * @param presetId Target preset id.
    * @param settings Settings snapshot to persist.
    */
-  const saveActivePresetSettings = (settings: SettingsSnapshot) => {
-    if (!state.activePresetId) {
-      return
-    }
-
-    commitState(current => updatePresetSettings(current, current.activePresetId ?? '', settings))
+  const savePresetSettingsById = (presetId: string, settings: SettingsSnapshot) => {
+    commitState(current => updatePresetSettings(current, presetId, settings))
   }
 
   const activePreset = useMemo(() => getActivePreset(state), [state])
@@ -106,8 +97,8 @@ export function useSettingsPresets(): UseSettingsPresetsReturn {
     activePreset,
     selectPreset,
     createNewPreset,
-    renameCurrentPreset,
-    deleteCurrentPreset,
-    saveActivePresetSettings,
+    renamePresetById,
+    deletePresetById,
+    savePresetSettingsById,
   }
 }

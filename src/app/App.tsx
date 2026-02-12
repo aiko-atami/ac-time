@@ -5,12 +5,12 @@ import { ErrorState } from '@/components/ErrorState'
 import { Leaderboard } from '@/components/Leaderboard'
 import { LeaderboardFilters } from '@/components/LeaderboardFilters'
 import { LoadingState } from '@/components/LoadingState'
-import { SettingsDialog } from '@/components/SettingsDialog'
 import { useChampionshipParticipants } from '@/features/championship-participants/model/useChampionshipParticipants'
 import { useLeaderboardFilters } from '@/features/leaderboard/model/useLeaderboardFilters'
 import { useSettingsPresets } from '@/features/settings/model/useSettingsPresets'
 import { useLeaderboard } from '@/hooks/useLeaderboard'
 import { DEFAULT_REFRESH_INTERVAL } from '@/lib/constants'
+import { SettingsDialog } from '@/widgets/settings-dialog/ui/SettingsDialog'
 
 const EMPTY_LEADERBOARD_ENTRIES: ProcessedEntry[] = []
 
@@ -25,9 +25,9 @@ export function App() {
     activePreset,
     selectPreset,
     createNewPreset,
-    renameCurrentPreset,
-    deleteCurrentPreset,
-    saveActivePresetSettings,
+    renamePresetById,
+    deletePresetById,
+    savePresetSettingsById,
   } = useSettingsPresets()
 
   const activeSettings = activePreset?.settings ?? null
@@ -103,9 +103,9 @@ export function App() {
           activeSettings={activeSettings}
           onSelectPreset={selectPreset}
           onCreatePreset={createNewPreset}
-          onRenameActivePreset={renameCurrentPreset}
-          onDeleteActivePreset={deleteCurrentPreset}
-          onSaveActivePreset={saveActivePresetSettings}
+          onRenamePreset={renamePresetById}
+          onDeletePreset={deletePresetById}
+          onSavePreset={savePresetSettingsById}
         />
       </div>
 

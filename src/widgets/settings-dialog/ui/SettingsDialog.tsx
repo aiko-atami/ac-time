@@ -1,4 +1,4 @@
-// @anchor: leaderboard/components/settings-dialog
+// @anchor: leaderboard/widgets/settings-dialog/ui
 // @intent: Lightweight settings dialog for preset selection plus entrypoint to advanced preset management.
 import type { SettingsPreset, SettingsSnapshot } from '@/lib/types'
 import { IconSettings } from '@tabler/icons-react'
@@ -20,9 +20,9 @@ interface SettingsDialogProps {
   activeSettings: SettingsSnapshot | null
   onSelectPreset: (presetId: string) => void
   onCreatePreset: (settings: SettingsSnapshot, name?: string) => void
-  onRenameActivePreset: (name: string) => void
-  onDeleteActivePreset: () => void
-  onSaveActivePreset: (settings: SettingsSnapshot) => void
+  onRenamePreset: (presetId: string, name: string) => void
+  onDeletePreset: (presetId: string) => void
+  onSavePreset: (presetId: string, settings: SettingsSnapshot) => void
 }
 
 /**
@@ -33,9 +33,9 @@ interface SettingsDialogProps {
  * @param props.activeSettings Active preset settings snapshot.
  * @param props.onSelectPreset Selects preset by id.
  * @param props.onCreatePreset Creates preset from snapshot and optional name.
- * @param props.onRenameActivePreset Renames active preset.
- * @param props.onDeleteActivePreset Deletes active preset.
- * @param props.onSaveActivePreset Saves settings into active preset.
+ * @param props.onRenamePreset Renames selected preset by id.
+ * @param props.onDeletePreset Deletes selected preset by id.
+ * @param props.onSavePreset Saves settings into selected preset by id.
  * @returns Settings trigger button and dialog.
  */
 export function SettingsDialog({
@@ -44,17 +44,21 @@ export function SettingsDialog({
   activeSettings,
   onSelectPreset,
   onCreatePreset,
-  onRenameActivePreset,
-  onDeleteActivePreset,
-  onSaveActivePreset,
+  onRenamePreset,
+  onDeletePreset,
+  onSavePreset,
 }: SettingsDialogProps) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [managementOpen, setManagementOpen] = useState(false)
+  const [pendingPresetId, setPendingPresetId] = useState<string | null>(activePresetId)
 
   /**
    * Opens quick settings dialog for preset selection.
    */
-  const openSettings = () => setSettingsOpen(true)
+  const openSettings = () => {
+    setPendingPresetId(activePresetId)
+    setSettingsOpen(true)
+  }
 
   /**
    * Handles quick settings visibility toggles.
@@ -62,6 +66,9 @@ export function SettingsDialog({
    */
   const handleSettingsOpenChange = (open: boolean) => {
     setSettingsOpen(open)
+    if (!open) {
+      setPendingPresetId(activePresetId)
+    }
   }
 
   /**
@@ -69,22 +76,38 @@ export function SettingsDialog({
    * @param presetId Selected preset id.
    */
   const handleSelectPreset = (presetId: string) => {
-    onSelectPreset(presetId)
+    setPendingPresetId(presetId)
   }
 
   /**
    * Transitions from quick settings into advanced preset management dialog.
    */
   const handleManagePresets = () => {
+    setPendingPresetId(activePresetId)
     setSettingsOpen(false)
     setManagementOpen(true)
   }
 
   /**
-   * Closes quick settings dialog without persisting, used as temporary Save action.
+   * Commits pending preset selection and closes quick settings dialog.
    */
   const handleSave = () => {
+    if (pendingPresetId && pendingPresetId !== activePresetId) {
+      onSelectPreset(pendingPresetId)
+    }
     setSettingsOpen(false)
+  }
+
+  /**
+   * Handles management dialog close and returns user to quick settings.
+   * @param open Next management dialog open state.
+   */
+  const handleManagementOpenChange = (open: boolean) => {
+    setManagementOpen(open)
+    if (!open) {
+      setPendingPresetId(activePresetId)
+      setSettingsOpen(true)
+    }
   }
 
   return (
@@ -107,32 +130,33 @@ export function SettingsDialog({
           <div>
             <PresetControls
               presets={presets}
-              activePresetId={activePresetId}
+              selectedPresetId={pendingPresetId}
               onSelectPreset={handleSelectPreset}
               onManagePresets={handleManagePresets}
             />
           </div>
 
           <DialogFooter className="pt-2">
-            <Button type="button" onClick={handleSave}>
+            <Button type="button" onClick={handleSave} disabled={!pendingPresetId || pendingPresetId === activePresetId}>
               Save
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <PresetManagementDialog
-        open={managementOpen}
-        presets={presets}
-        activePresetId={activePresetId}
-        activeSettings={activeSettings}
-        onOpenChange={setManagementOpen}
-        onSelectPreset={onSelectPreset}
-        onCreatePreset={onCreatePreset}
-        onRenameActivePreset={onRenameActivePreset}
-        onDeleteActivePreset={onDeleteActivePreset}
-        onSaveActivePreset={onSaveActivePreset}
-      />
+      {managementOpen && (
+        <PresetManagementDialog
+          open={managementOpen}
+          presets={presets}
+          activePresetId={activePresetId}
+          activeSettings={activeSettings}
+          onOpenChange={handleManagementOpenChange}
+          onCreatePreset={onCreatePreset}
+          onRenamePreset={onRenamePreset}
+          onDeletePreset={onDeletePreset}
+          onSavePreset={onSavePreset}
+        />
+      )}
     </>
   )
 }

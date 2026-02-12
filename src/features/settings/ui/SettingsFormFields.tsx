@@ -10,6 +10,7 @@ interface SettingsFormFieldsProps {
   classesText: string
   serverUrlError?: string
   participantsCsvUrlError?: string
+  classesHints?: string[]
   onServerUrlChange: (value: string) => void
   onParticipantsCsvUrlChange: (value: string) => void
   onClassesTextChange: (value: string) => void
@@ -23,6 +24,7 @@ interface SettingsFormFieldsProps {
  * @param props.classesText Current multiline car classes input value.
  * @param props.serverUrlError Optional validation error text for server URL field.
  * @param props.participantsCsvUrlError Optional validation error text for participants CSV URL field.
+ * @param props.classesHints Optional warning hints for car class parser behavior.
  * @param props.onServerUrlChange Callback invoked on server URL input change.
  * @param props.onParticipantsCsvUrlChange Callback invoked on participants CSV URL input change.
  * @param props.onClassesTextChange Callback invoked on car classes textarea change.
@@ -34,6 +36,7 @@ export function SettingsFormFields({
   classesText,
   serverUrlError,
   participantsCsvUrlError,
+  classesHints,
   onServerUrlChange,
   onParticipantsCsvUrlChange,
   onClassesTextChange,
@@ -100,6 +103,11 @@ export function SettingsFormFields({
           {' '}
           <code>ClassName: pattern1, pattern2</code>
         </p>
+        {classesHints?.map(hint => (
+          <p key={hint} className="text-[0.8rem] text-amber-700" aria-live="polite">
+            {hint}
+          </p>
+        ))}
       </div>
     </div>
   )

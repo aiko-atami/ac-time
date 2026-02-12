@@ -13,11 +13,10 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -32,6 +31,7 @@ import {
 } from '@/components/ui/select'
 import { formatCarClasses, parseCarClasses } from '@/features/settings/model/serialize'
 import { SettingsFormFields } from '@/features/settings/ui/SettingsFormFields'
+import { useToast } from '@/shared/ui/toast'
 
 interface PresetManagementDialogProps {
   open: boolean
@@ -39,11 +39,10 @@ interface PresetManagementDialogProps {
   activePresetId: string | null
   activeSettings: SettingsSnapshot | null
   onOpenChange: (open: boolean) => void
-  onSelectPreset: (presetId: string) => void
   onCreatePreset: (settings: SettingsSnapshot, name?: string) => void
-  onRenameActivePreset: (name: string) => void
-  onDeleteActivePreset: () => void
-  onSaveActivePreset: (settings: SettingsSnapshot) => void
+  onRenamePreset: (presetId: string, name: string) => void
+  onDeletePreset: (presetId: string) => void
+  onSavePreset: (presetId: string, settings: SettingsSnapshot) => void
 }
 
 const EMPTY_SETTINGS: SettingsSnapshot = {
@@ -62,11 +61,10 @@ const EMPTY_SETTINGS: SettingsSnapshot = {
  * @param props.activePresetId Current active preset id.
  * @param props.activeSettings Current active preset snapshot.
  * @param props.onOpenChange Callback invoked on open state changes.
- * @param props.onSelectPreset Callback to activate another preset.
  * @param props.onCreatePreset Callback to create a new preset from draft.
- * @param props.onRenameActivePreset Callback to rename currently active preset.
- * @param props.onDeleteActivePreset Callback to delete currently active preset.
- * @param props.onSaveActivePreset Callback to persist settings into active preset.
+ * @param props.onRenamePreset Callback to rename selected preset.
+ * @param props.onDeletePreset Callback to delete selected preset.
+ * @param props.onSavePreset Callback to persist settings into selected preset.
  * @returns Full preset management dialog with validation and delete confirmation.
  */
 export function PresetManagementDialog({
@@ -75,16 +73,19 @@ export function PresetManagementDialog({
   activePresetId,
   activeSettings,
   onOpenChange,
-  onSelectPreset,
   onCreatePreset,
-  onRenameActivePreset,
-  onDeleteActivePreset,
-  onSaveActivePreset,
+  onRenamePreset,
+  onDeletePreset,
+  onSavePreset,
 }: PresetManagementDialogProps) {
-  const [serverUrl, setServerUrl] = useState('')
-  const [participantsCsvUrl, setParticipantsCsvUrl] = useState('')
-  const [classesCsv, setClassesCsv] = useState('')
-  const [presetName, setPresetName] = useState('')
+  const { success } = useToast()
+  const initialSettings = activeSettings ?? EMPTY_SETTINGS
+  const initialPresetName = presets.find(preset => preset.id === activePresetId)?.name ?? 'Preset'
+  const [managedPresetId, setManagedPresetId] = useState<string | null>(() => activePresetId)
+  const [serverUrl, setServerUrl] = useState(() => initialSettings.serverUrl)
+  const [participantsCsvUrl, setParticipantsCsvUrl] = useState(() => initialSettings.participants.csvUrl)
+  const [classesCsv, setClassesCsv] = useState(() => formatCarClasses(initialSettings.carClasses))
+  const [presetName, setPresetName] = useState(() => initialPresetName)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   /**
@@ -101,16 +102,17 @@ export function PresetManagementDialog({
   /**
    * Resolves active preset display name from current preset list.
    */
-  const activePresetName = useMemo(() => {
-    return presets.find(preset => preset.id === activePresetId)?.name ?? 'Preset'
-  }, [presets, activePresetId])
+  const managedPresetName = useMemo(() => {
+    return presets.find(preset => preset.id === managedPresetId)?.name ?? 'Preset'
+  }, [presets, managedPresetId])
 
   /**
    * Synchronizes local draft inputs with current active preset payload.
    */
   const syncDraftFromActivePreset = () => {
     applySnapshotToDraft(activeSettings)
-    setPresetName(activePresetName)
+    setManagedPresetId(activePresetId)
+    setPresetName(initialPresetName)
   }
 
   /**
@@ -127,15 +129,32 @@ export function PresetManagementDialog({
 
   const serverUrlError = validateRequiredHttpUrl(serverUrl)
   const participantsCsvUrlError = validateOptionalHttpUrl(participantsCsvUrl)
-  const canPersist = Boolean(activePresetId) && !serverUrlError && !participantsCsvUrlError
-  const canCreate = !serverUrlError && !participantsCsvUrlError
+  const presetNameError = validatePresetName({
+    value: presetName,
+    presets,
+    activePresetId: managedPresetId,
+    mode: 'save',
+  })
+  const createPresetNameError = validatePresetName({
+    value: presetName,
+    presets,
+    mode: 'create',
+  })
+  const classesHints = buildCarClassesHints(classesCsv)
+  const canPersist = Boolean(managedPresetId)
+    && !serverUrlError
+    && !participantsCsvUrlError
+    && !presetNameError
+  const canCreate = !serverUrlError
+    && !participantsCsvUrlError
+    && !createPresetNameError
 
   /**
    * Selects preset for management and immediately reflects it in local draft inputs.
    * @param presetId Target preset id from selector.
    */
   const handleSelectPreset = (presetId: string) => {
-    onSelectPreset(presetId)
+    setManagedPresetId(presetId)
     const selectedPreset = presets.find(preset => preset.id === presetId)
     applySnapshotToDraft(selectedPreset?.settings ?? null)
     setPresetName(selectedPreset?.name ?? 'Preset')
@@ -144,15 +163,19 @@ export function PresetManagementDialog({
   /**
    * Saves current draft over the active preset and applies name change in one action.
    */
-  const handleSaveActivePreset = () => {
+  const handleSavePreset = () => {
     if (!canPersist) {
       return
     }
 
+    if (!managedPresetId) {
+      return
+    }
+
     const nextSnapshot = buildDraftSnapshot(serverUrl, participantsCsvUrl, classesCsv)
-    onRenameActivePreset(presetName)
-    onSaveActivePreset(nextSnapshot)
-    onOpenChange(false)
+    onRenamePreset(managedPresetId, presetName)
+    onSavePreset(managedPresetId, nextSnapshot)
+    success('Preset saved.')
   }
 
   /**
@@ -165,15 +188,20 @@ export function PresetManagementDialog({
 
     const nextSnapshot = buildDraftSnapshot(serverUrl, participantsCsvUrl, classesCsv)
     onCreatePreset(nextSnapshot, presetName)
+    success('Preset created.')
   }
 
   /**
    * Executes active preset deletion after user confirmation.
    */
   const handleDeletePreset = () => {
-    const nextPresetAfterDelete = presets.find(preset => preset.id !== activePresetId) ?? null
+    const nextPresetAfterDelete = presets.find(preset => preset.id !== managedPresetId) ?? null
+    if (!managedPresetId) {
+      return
+    }
     setDeleteDialogOpen(false)
-    onDeleteActivePreset()
+    onDeletePreset(managedPresetId)
+    setManagedPresetId(nextPresetAfterDelete?.id ?? null)
     applySnapshotToDraft(nextPresetAfterDelete?.settings ?? null)
     setPresetName(nextPresetAfterDelete?.name ?? 'Preset')
   }
@@ -184,18 +212,15 @@ export function PresetManagementDialog({
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Preset Management</DialogTitle>
-            <DialogDescription>
-              Create and edit presets for server URL, participants CSV URL and car classes.
-            </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4">
-            <div className="grid gap-1.5">
-              <Label id="preset-select-label">Preset</Label>
-              <Select value={activePresetId ?? undefined} onValueChange={value => value && handleSelectPreset(value)}>
+          <div className="mt-4 grid gap-6">
+            <div className="grid gap-2">
+              <Label id="preset-select-label">Select preset to edit</Label>
+              <Select value={managedPresetId ?? undefined} onValueChange={value => value && handleSelectPreset(value)}>
                 <SelectTrigger aria-labelledby="preset-select-label" className="w-full">
                   <SelectValue placeholder="Select preset">
-                    {activePresetName}
+                    {managedPresetName}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
@@ -208,48 +233,59 @@ export function PresetManagementDialog({
               </Select>
             </div>
 
-            <div className="grid gap-1.5">
-              <Label htmlFor="preset-name">Preset Name</Label>
-              <Input
-                id="preset-name"
-                name="presetName"
-                autoComplete="off"
-                value={presetName}
-                onChange={event => setPresetName(event.target.value)}
-                placeholder="Preset name"
-              />
-            </div>
+            <Card size="default" className="gap-0">
+              <CardContent className="grid gap-4 py-4">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="preset-name">Preset Name</Label>
+                  <Input
+                    id="preset-name"
+                    name="presetName"
+                    autoComplete="off"
+                    value={presetName}
+                    onChange={event => setPresetName(event.target.value)}
+                    placeholder="Preset name"
+                    aria-invalid={Boolean(presetNameError)}
+                    aria-describedby={presetNameError ? 'preset-name-error' : undefined}
+                  />
+                  {presetNameError && (
+                    <p id="preset-name-error" className="text-xs text-destructive" aria-live="polite">
+                      {presetNameError}
+                    </p>
+                  )}
+                </div>
+
+                <SettingsFormFields
+                  serverUrl={serverUrl}
+                  participantsCsvUrl={participantsCsvUrl}
+                  classesText={classesCsv}
+                  serverUrlError={serverUrlError ?? undefined}
+                  participantsCsvUrlError={participantsCsvUrlError ?? undefined}
+                  classesHints={classesHints}
+                  onServerUrlChange={setServerUrl}
+                  onParticipantsCsvUrlChange={setParticipantsCsvUrl}
+                  onClassesTextChange={setClassesCsv}
+                />
+              </CardContent>
+              <CardFooter className="justify-between gap-2 border-t-0 bg-transparent pt-0">
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => setDeleteDialogOpen(true)}
+                  disabled={presets.length <= 1 || !managedPresetId}
+                >
+                  Delete Preset
+                </Button>
+                <div className="flex flex-wrap justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={handleSavePreset} disabled={!canPersist}>
+                    Save Preset
+                  </Button>
+                  <Button type="button" onClick={handleCreatePreset} disabled={!canCreate}>
+                    Create New
+                  </Button>
+                </div>
+              </CardFooter>
+            </Card>
           </div>
-
-          <SettingsFormFields
-            serverUrl={serverUrl}
-            participantsCsvUrl={participantsCsvUrl}
-            classesText={classesCsv}
-            serverUrlError={serverUrlError ?? undefined}
-            participantsCsvUrlError={participantsCsvUrlError ?? undefined}
-            onServerUrlChange={setServerUrl}
-            onParticipantsCsvUrlChange={setParticipantsCsvUrl}
-            onClassesTextChange={setClassesCsv}
-          />
-
-          <DialogFooter className="gap-2 sm:justify-between">
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => setDeleteDialogOpen(true)}
-              disabled={presets.length <= 1}
-            >
-              Delete Active
-            </Button>
-            <div className="flex flex-wrap justify-end gap-2">
-              <Button type="button" variant="outline" onClick={handleCreatePreset} disabled={!canCreate}>
-                Create New
-              </Button>
-              <Button type="button" onClick={handleSaveActivePreset} disabled={!canPersist}>
-                Save Active
-              </Button>
-            </div>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -259,7 +295,7 @@ export function PresetManagementDialog({
             <AlertDialogTitle>Delete preset?</AlertDialogTitle>
             <AlertDialogDescription>
               Preset "
-              {activePresetName}
+              {managedPresetName}
               " will be removed permanently.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -312,6 +348,108 @@ function validateOptionalHttpUrl(value: string): string | null {
   catch {
     return 'URL is invalid.'
   }
+}
+
+interface ValidatePresetNameParams {
+  value: string
+  presets: SettingsPreset[]
+  activePresetId?: string | null
+  mode: 'create' | 'save'
+}
+
+/**
+ * Validates preset name based on required and uniqueness constraints.
+ * @param params Validation params.
+ * @param params.value Current name input.
+ * @param params.presets Existing preset list.
+ * @param params.activePresetId Current active preset id.
+ * @param params.mode Validation context.
+ * @returns Error text or null.
+ */
+function validatePresetName({
+  value,
+  presets,
+  activePresetId,
+  mode,
+}: ValidatePresetNameParams): string | null {
+  const normalized = value.trim()
+  if (!normalized) {
+    return 'Preset name is required.'
+  }
+
+  const normalizedLower = normalized.toLowerCase()
+  const duplicate = presets.find((preset) => {
+    if (mode === 'save' && preset.id === activePresetId) {
+      return false
+    }
+    return preset.name.trim().toLowerCase() === normalizedLower
+  })
+
+  if (duplicate) {
+    return 'Preset name must be unique.'
+  }
+
+  return null
+}
+
+/**
+ * Builds warning hints for class definitions entered as free-form text.
+ * @param classesCsv Current textarea value.
+ * @returns Human-readable warning hints.
+ */
+function buildCarClassesHints(classesCsv: string): string[] {
+  const hints: string[] = []
+  const lines = classesCsv
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+
+  const seenNames = new Set<string>()
+  let duplicateNames = 0
+  let missingColon = 0
+  let emptyPatternDefinitions = 0
+
+  for (const line of lines) {
+    const colonIndex = line.indexOf(':')
+    if (colonIndex === -1) {
+      missingColon += 1
+      continue
+    }
+
+    const name = line.slice(0, colonIndex).trim()
+    if (!name) {
+      emptyPatternDefinitions += 1
+      continue
+    }
+
+    const key = name.toLowerCase()
+    if (seenNames.has(key)) {
+      duplicateNames += 1
+    }
+    seenNames.add(key)
+
+    const patterns = line
+      .slice(colonIndex + 1)
+      .split(',')
+      .map(pattern => pattern.trim())
+      .filter(Boolean)
+
+    if (patterns.length === 0) {
+      emptyPatternDefinitions += 1
+    }
+  }
+
+  if (missingColon > 0) {
+    hints.push(`Warning: ${missingColon} line(s) miss ":" and will fallback to "ClassName: ClassName".`)
+  }
+  if (duplicateNames > 0) {
+    hints.push(`Warning: ${duplicateNames} duplicate class name(s) will be ignored on save.`)
+  }
+  if (emptyPatternDefinitions > 0) {
+    hints.push(`Warning: ${emptyPatternDefinitions} line(s) have no patterns and will fallback to class name.`)
+  }
+
+  return hints
 }
 
 /**

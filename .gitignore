@@ -33,3 +33,8 @@ championships/
 
 # Cloudflare Wrangler
 .wrangler/
+
+# Tailwind skill generated docs snapshot (local only)
+.agents/skills/tailwind-4-docs/references/docs/
+.agents/skills/tailwind-4-docs/references/docs-index.tsx
+.agents/skills/tailwind-4-docs/references/docs-source.txt

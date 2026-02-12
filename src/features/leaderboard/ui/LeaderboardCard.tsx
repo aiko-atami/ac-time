@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { useLeaderboardEntry } from '@/hooks/useLeaderboardEntry'
 import { cardPadding, sectorBadge } from '@/lib/styles'
-import { formatTime } from '@/lib/utils'
+import { formatTime } from '@/shared/lib/utils'
 import { CarClassBadge } from './CarClassBadge'
 
 interface LeaderboardCardProps {

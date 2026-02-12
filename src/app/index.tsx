@@ -1,9 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
-import App from './app/App.tsx'
-import { ToastProvider } from './shared/ui/toast.tsx'
-import './index.css'
+import { ToastProvider } from '../shared/ui/toast.tsx'
+import App from './App.tsx'
+import './styles/index.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -1,6 +1,6 @@
 import type { ProcessedEntry } from '@/lib/types'
 import { DEFAULT_PACE_PERCENT_THRESHOLD } from '@/lib/constants'
-import { formatTime } from '@/lib/utils'
+import { formatTime } from '@/shared/lib/utils'
 
 interface UseLeaderboardEntryResult {
   percentage: number | null

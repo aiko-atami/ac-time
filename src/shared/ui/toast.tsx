@@ -3,7 +3,7 @@
 // @intent: Lightweight toast provider and hook for transient success/error feedback.
 import type { ReactNode } from 'react'
 import { createContext, use, useCallback, useMemo, useState } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/lib/utils'
 
 type ToastVariant = 'success' | 'error' | 'info'
 

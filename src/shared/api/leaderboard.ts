@@ -1,6 +1,6 @@
-import type { CarClassRule, ProcessedLeaderboard } from './types'
+import type { CarClassRule, ProcessedLeaderboard } from '@/lib/types'
+import { mockLeaderboardData } from '@/lib/mockData'
 import { normalizeDriverName } from '@/shared/lib/driver-name'
-import { mockLeaderboardData } from './mockData'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 

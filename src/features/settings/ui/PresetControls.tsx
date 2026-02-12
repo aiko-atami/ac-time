@@ -2,6 +2,7 @@
 // @intent: Minimal preset controls for quick preset switching from settings dialog.
 import type { SettingsPreset } from '@/lib/types'
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -35,10 +36,10 @@ export function PresetControls({
   const activePresetName = presets.find(preset => preset.id === activePresetId)?.name
 
   return (
-    <div className="grid gap-2">
-      <div className="grid grid-cols-4 items-center gap-4">
-        <span id="settings-preset-label" className="text-right text-sm font-medium">Preset</span>
-        <div className="col-span-3">
+    <div className="grid gap-4">
+      <div className="grid gap-1.5">
+        <Label id="settings-preset-label">Active preset</Label>
+        <div className="flex items-center gap-2">
           <Select value={activePresetId ?? undefined} onValueChange={value => value && onSelectPreset(value)}>
             <SelectTrigger aria-labelledby="settings-preset-label" className="w-full">
               <SelectValue placeholder="Select preset">
@@ -53,14 +54,8 @@ export function PresetControls({
               ))}
             </SelectContent>
           </Select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-4 items-center gap-4">
-        <span className="text-right text-sm font-medium">Actions</span>
-        <div className="col-span-3 flex flex-wrap gap-2">
-          <Button type="button" size="sm" variant="outline" onClick={onManagePresets}>
-            Manage Presets
+          <Button type="button" size="default" variant="outline" onClick={onManagePresets}>
+            Manage
           </Button>
         </div>
       </div>

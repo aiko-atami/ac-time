@@ -40,72 +40,66 @@ export function SettingsFormFields({
 }: SettingsFormFieldsProps) {
   return (
     <div className="grid gap-4 py-2">
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="server-url" className="text-right">
+      <div className="grid gap-1.5">
+        <Label htmlFor="server-url">
           Server URL
         </Label>
-        <div className="col-span-3 grid gap-1">
-          <Input
-            id="server-url"
-            name="serverUrl"
-            type="url"
-            autoComplete="url"
-            value={serverUrl}
-            onChange={e => onServerUrlChange(e.target.value)}
-            aria-invalid={Boolean(serverUrlError)}
-            aria-describedby={serverUrlError ? 'server-url-error' : undefined}
-          />
-          {serverUrlError && (
-            <p id="server-url-error" className="text-xs text-destructive" aria-live="polite">
-              {serverUrlError}
-            </p>
-          )}
-        </div>
+        <Input
+          id="server-url"
+          name="serverUrl"
+          type="url"
+          autoComplete="url"
+          value={serverUrl}
+          onChange={e => onServerUrlChange(e.target.value)}
+          aria-invalid={Boolean(serverUrlError)}
+          aria-describedby={serverUrlError ? 'server-url-error' : undefined}
+        />
+        {serverUrlError && (
+          <p id="server-url-error" className="text-xs text-destructive" aria-live="polite">
+            {serverUrlError}
+          </p>
+        )}
       </div>
 
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="participants-csv-url" className="text-right">
+      <div className="grid gap-1.5">
+        <Label htmlFor="participants-csv-url">
           Participants CSV URL (optional)
         </Label>
-        <div className="col-span-3 grid gap-1">
-          <Input
-            id="participants-csv-url"
-            name="participantsCsvUrl"
-            type="url"
-            autoComplete="url"
-            value={participantsCsvUrl}
-            onChange={e => onParticipantsCsvUrlChange(e.target.value)}
-            aria-invalid={Boolean(participantsCsvUrlError)}
-            aria-describedby={participantsCsvUrlError ? 'participants-csv-url-error' : undefined}
-          />
-          {participantsCsvUrlError && (
-            <p id="participants-csv-url-error" className="text-xs text-destructive" aria-live="polite">
-              {participantsCsvUrlError}
-            </p>
-          )}
-        </div>
+        <Input
+          id="participants-csv-url"
+          name="participantsCsvUrl"
+          type="url"
+          autoComplete="url"
+          value={participantsCsvUrl}
+          onChange={e => onParticipantsCsvUrlChange(e.target.value)}
+          aria-invalid={Boolean(participantsCsvUrlError)}
+          aria-describedby={participantsCsvUrlError ? 'participants-csv-url-error' : undefined}
+        />
+        {participantsCsvUrlError && (
+          <p id="participants-csv-url-error" className="text-xs text-destructive" aria-live="polite">
+            {participantsCsvUrlError}
+          </p>
+        )}
       </div>
 
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="classes" className="text-right">
+      <div className="grid gap-1.5">
+        <Label htmlFor="classes">
           Car Classes
         </Label>
-        <div className="col-span-3">
-          <Textarea
-            id="classes"
-            name="carClasses"
-            value={classesText}
-            onChange={e => onClassesTextChange(e.target.value)}
-            placeholder="Super Production: SUPER-PRODUCTION&#10;Lada C GT: Concept C GT, Lada CGT"
-            rows={7}
-            aria-describedby="car-classes-help"
-          />
-          <p id="car-classes-help" className="mt-1 text-[0.8rem] text-muted-foreground">
-            One class per line:
-            {' '}
-            <code>ClassName: pattern1, pattern2</code>
-          </p>
-        </div>
+        <Textarea
+          id="classes"
+          name="carClasses"
+          value={classesText}
+          onChange={e => onClassesTextChange(e.target.value)}
+          placeholder="Super Production: SUPER-PRODUCTION&#10;Lada C GT: Concept C GT, Lada CGT"
+          rows={7}
+          aria-describedby="car-classes-help"
+        />
+        <p id="car-classes-help" className="text-[0.8rem] text-muted-foreground">
+          One class per line:
+          {' '}
+          <code>ClassName: pattern1, pattern2</code>
+        </p>
       </div>
     </div>
   )

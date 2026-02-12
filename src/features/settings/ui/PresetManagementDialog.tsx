@@ -189,39 +189,35 @@ export function PresetManagementDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-2">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label id="preset-select-label" className="text-right">Preset</Label>
-              <div className="col-span-3">
-                <Select value={activePresetId ?? undefined} onValueChange={value => value && handleSelectPreset(value)}>
-                  <SelectTrigger aria-labelledby="preset-select-label" className="w-full">
-                    <SelectValue placeholder="Select preset">
-                      {activePresetName}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {presets.map(preset => (
-                      <SelectItem key={preset.id} value={preset.id}>
-                        {preset.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+          <div className="grid gap-4">
+            <div className="grid gap-1.5">
+              <Label id="preset-select-label">Preset</Label>
+              <Select value={activePresetId ?? undefined} onValueChange={value => value && handleSelectPreset(value)}>
+                <SelectTrigger aria-labelledby="preset-select-label" className="w-full">
+                  <SelectValue placeholder="Select preset">
+                    {activePresetName}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {presets.map(preset => (
+                    <SelectItem key={preset.id} value={preset.id}>
+                      {preset.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="preset-name" className="text-right">Preset Name</Label>
-              <div className="col-span-3">
-                <Input
-                  id="preset-name"
-                  name="presetName"
-                  autoComplete="off"
-                  value={presetName}
-                  onChange={event => setPresetName(event.target.value)}
-                  placeholder="Preset name"
-                />
-              </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="preset-name">Preset Name</Label>
+              <Input
+                id="preset-name"
+                name="presetName"
+                autoComplete="off"
+                value={presetName}
+                onChange={event => setPresetName(event.target.value)}
+                placeholder="Preset name"
+              />
             </div>
           </div>
 

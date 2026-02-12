@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -80,6 +80,13 @@ export function SettingsDialog({
     setManagementOpen(true)
   }
 
+  /**
+   * Closes quick settings dialog without persisting, used as temporary Save action.
+   */
+  const handleSave = () => {
+    setSettingsOpen(false)
+  }
+
   return (
     <>
       <Button
@@ -93,20 +100,24 @@ export function SettingsDialog({
       </Button>
 
       <Dialog open={settingsOpen} onOpenChange={handleSettingsOpenChange}>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="flex flex-col gap-6 sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>Settings</DialogTitle>
-            <DialogDescription>
-              Quickly switch active preset. Use management dialog for create/edit/delete.
-            </DialogDescription>
           </DialogHeader>
+          <div>
+            <PresetControls
+              presets={presets}
+              activePresetId={activePresetId}
+              onSelectPreset={handleSelectPreset}
+              onManagePresets={handleManagePresets}
+            />
+          </div>
 
-          <PresetControls
-            presets={presets}
-            activePresetId={activePresetId}
-            onSelectPreset={handleSelectPreset}
-            onManagePresets={handleManagePresets}
-          />
+          <DialogFooter className="pt-2">
+            <Button type="button" onClick={handleSave}>
+              Save
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

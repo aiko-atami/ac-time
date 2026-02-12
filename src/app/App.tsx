@@ -74,7 +74,7 @@ export function App() {
   const renderHeader = () => (
     <header className="mb-4 sm:mb-5">
       <div className="flex items-start justify-between gap-2">
-        <div className="space-y-0.5 mb-1 min-w-0 flex-1">
+        <div className="flex flex-col gap-0.5 mb-1 min-w-0 flex-1">
           <h2 className="text-xl sm:text-2xl md:text-3xl font-bold truncate">
             {data?.serverName || 'AC Live Timing'}
           </h2>

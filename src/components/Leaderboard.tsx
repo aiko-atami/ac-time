@@ -36,7 +36,7 @@ export function Leaderboard({ entries, isRegistered }: LeaderboardProps) {
   return (
     <>
       {/* Mobile: Cards */}
-      <div className="space-y-2 sm:space-y-2.5 md:hidden">
+      <div className="flex flex-col gap-2 sm:gap-2.5 md:hidden">
         {entries.map((entry, index) => (
           <LeaderboardCard
             key={entry.id}
@@ -49,7 +49,7 @@ export function Leaderboard({ entries, isRegistered }: LeaderboardProps) {
       </div>
 
       {/* Desktop: Compact Rows */}
-      <div className="hidden md:block space-y-1.5">
+      <div className="hidden md:flex md:flex-col md:gap-1.5">
         {entries.map((entry, index) => (
           <LeaderboardRow
             key={entry.id}

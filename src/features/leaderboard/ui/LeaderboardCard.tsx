@@ -1,3 +1,5 @@
+// @anchor: leaderboard/features/card-ui
+// @intent: Compact mobile card representation of a leaderboard entry.
 import type { ProcessedEntry } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
@@ -14,8 +16,39 @@ interface LeaderboardCardProps {
   isRegistered?: boolean
 }
 
-export function LeaderboardCard({ entry, position, bestOverallLap, pacePercentThreshold, isRegistered }: LeaderboardCardProps) {
+/**
+ * Creates stable keys for split lists without relying on array index.
+ * @param splits Split values in milliseconds.
+ * @param prefix Key prefix for list context.
+ * @returns Keyed split values for rendering.
+ */
+function toKeyedSplits(splits: number[], prefix: 'best' | 'theor'): Array<{ key: string, value: number }> {
+  const occurrences = new Map<number, number>()
+  return splits.map((split) => {
+    const count = (occurrences.get(split) ?? 0) + 1
+    occurrences.set(split, count)
+    return {
+      key: `${prefix}-${split}-${count}`,
+      value: split,
+    }
+  })
+}
+
+/**
+ * Renders one leaderboard entry as a mobile-first card.
+ * @param props Component props object.
+ * @param props.entry Entry data to render.
+ * @param props.position Current visual position.
+ * @param props.bestOverallLap Best lap used for pace comparison.
+ * @param props.pacePercentThreshold Pace threshold used for badge classes.
+ * @param props.isRegistered Whether driver is registered in participants list.
+ * @returns Leaderboard entry card.
+ */
+export function LeaderboardCard(props: LeaderboardCardProps) {
+  const { entry, position, bestOverallLap, pacePercentThreshold, isRegistered } = props
   const { percentage, badgeClass, hasSplits } = useLeaderboardEntry(entry, bestOverallLap, pacePercentThreshold)
+  const bestLapSplits = toKeyedSplits(entry.bestLapSplits, 'best')
+  const theoreticalSplits = toKeyedSplits(entry.splits, 'theor')
 
   return (
     <Card className={cardPadding.card}>
@@ -88,36 +121,36 @@ export function LeaderboardCard({ entry, position, bestOverallLap, pacePercentTh
           </div>
 
           <div className="flex flex-col gap-1.5">
-            {entry.bestLapSplits.length > 0 && (
+            {bestLapSplits.length > 0 && (
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-muted-foreground min-w-[60px]">
                   Best:
                 </span>
                 <div className="flex flex-wrap gap-1">
-                  {entry.bestLapSplits.map((split, i) => (
+                  {bestLapSplits.map(split => (
                     <span
-                      key={`best-${i}`}
+                      key={split.key}
                       className={sectorBadge.best}
                     >
-                      {formatTime(split)}
+                      {formatTime(split.value)}
                     </span>
                   ))}
                 </div>
               </div>
             )}
 
-            {entry.splits.length > 0 && (
+            {theoreticalSplits.length > 0 && (
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-muted-foreground min-w-[60px]">
                   Theor:
                 </span>
                 <div className="flex flex-wrap gap-1">
-                  {entry.splits.map((split, i) => (
+                  {theoreticalSplits.map(split => (
                     <span
-                      key={`theor-${i}`}
+                      key={split.key}
                       className={sectorBadge.theoretical}
                     >
-                      {formatTime(split)}
+                      {formatTime(split.value)}
                     </span>
                   ))}
                 </div>

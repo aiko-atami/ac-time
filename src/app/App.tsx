@@ -2,11 +2,11 @@
 // @intent: App composition wiring settings presets, data loading and leaderboard UI.
 import type { ProcessedEntry } from '@/lib/types'
 import { ErrorState } from '@/components/ErrorState'
-import { Leaderboard } from '@/components/Leaderboard'
-import { LeaderboardFilters } from '@/components/LeaderboardFilters'
 import { LoadingState } from '@/components/LoadingState'
 import { useChampionshipParticipants } from '@/features/championship-participants/model/useChampionshipParticipants'
 import { useLeaderboardFilters } from '@/features/leaderboard/model/useLeaderboardFilters'
+import { Leaderboard } from '@/features/leaderboard/ui/Leaderboard'
+import { LeaderboardFilters } from '@/features/leaderboard/ui/LeaderboardFilters'
 import { useSettingsPresets } from '@/features/settings/model/useSettingsPresets'
 import { useLeaderboard } from '@/hooks/useLeaderboard'
 import { DEFAULT_PACE_PERCENT_THRESHOLD, DEFAULT_REFRESH_INTERVAL } from '@/lib/constants'

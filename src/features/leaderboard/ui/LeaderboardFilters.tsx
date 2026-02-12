@@ -1,3 +1,5 @@
+// @anchor: leaderboard/features/filters-ui
+// @intent: Stateless filter controls for class, sorting and registration visibility.
 import { IconArrowDown, IconArrowUp } from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -27,22 +29,46 @@ const SORT_OPTIONS = [
   { value: 'laps', label: 'Lap Count' },
 ] as const
 
-export function LeaderboardFilters({
-  classes,
-  selectedClass,
-  onClassChange,
-  sortBy,
-  onSortChange,
-  sortAsc,
-  onSortDirectionToggle,
-  showRegisteredOnly,
-  onToggleRegisteredOnly,
-}: LeaderboardFiltersProps) {
+/**
+ * Renders leaderboard filter controls.
+ * @param props Component props object.
+ * @param props.classes Available class options.
+ * @param props.selectedClass Selected class filter value.
+ * @param props.onClassChange Callback to update selected class.
+ * @param props.sortBy Selected sort field.
+ * @param props.onSortChange Callback to update sort field.
+ * @param props.sortAsc Whether sort direction is ascending.
+ * @param props.onSortDirectionToggle Callback to toggle sort direction.
+ * @param props.showRegisteredOnly Whether only registered drivers are shown.
+ * @param props.onToggleRegisteredOnly Callback to toggle registration-only filter.
+ * @returns Filter toolbar JSX.
+ */
+export function LeaderboardFilters(props: LeaderboardFiltersProps) {
+  const {
+    classes,
+    selectedClass,
+    onClassChange,
+    sortBy,
+    onSortChange,
+    sortAsc,
+    onSortDirectionToggle,
+    showRegisteredOnly,
+    onToggleRegisteredOnly,
+  } = props
+
+  /**
+   * Handles class selection updates from the select control.
+   * @param value Selected class or null.
+   */
   const handleClassChange = (value: string | null) => {
     if (value)
       onClassChange(value)
   }
 
+  /**
+   * Handles sort field updates with runtime narrowing.
+   * @param value Selected sort key or null.
+   */
   const handleSortChange = (value: string | null) => {
     if (value && (value === 'lapTime' || value === 'driver' || value === 'laps')) {
       onSortChange(value)
@@ -90,7 +116,7 @@ export function LeaderboardFilters({
 
       </div>
 
-      <div className="flex-1 min-w-[120px] flex items-end">
+      <div className="order-last basis-full sm:order-none sm:basis-auto sm:flex-1 sm:min-w-[120px] flex items-end">
         <div className="flex items-center gap-2 h-7">
           <Checkbox
             id="show-registered"
@@ -106,7 +132,7 @@ export function LeaderboardFilters({
         </div>
       </div>
 
-      <div className="flex items-end">
+      <div className="flex items-end shrink-0">
         <Button
           onClick={onSortDirectionToggle}
           variant="outline"

@@ -1,3 +1,5 @@
+// @anchor: leaderboard/features/row-ui
+// @intent: Dense desktop row representation of a leaderboard entry.
 import type { ProcessedEntry } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
@@ -14,7 +16,18 @@ interface LeaderboardRowProps {
   isRegistered?: boolean
 }
 
-export function LeaderboardRow({ entry, position, bestOverallLap, pacePercentThreshold, isRegistered }: LeaderboardRowProps) {
+/**
+ * Renders one leaderboard entry as a desktop row.
+ * @param props Component props object.
+ * @param props.entry Entry data to render.
+ * @param props.position Current visual position.
+ * @param props.bestOverallLap Best lap used for pace comparison.
+ * @param props.pacePercentThreshold Pace threshold used for badge classes.
+ * @param props.isRegistered Whether driver is registered in participants list.
+ * @returns Leaderboard entry row.
+ */
+export function LeaderboardRow(props: LeaderboardRowProps) {
+  const { entry, position, bestOverallLap, pacePercentThreshold, isRegistered } = props
   const { percentage, badgeClass, tooltipText } = useLeaderboardEntry(entry, bestOverallLap, pacePercentThreshold)
 
   return (

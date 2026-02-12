@@ -1,6 +1,7 @@
+// @anchor: leaderboard/features/list-ui
+// @intent: Renders leaderboard entries with mobile card and desktop row layouts.
 import type { ProcessedEntry } from '@/lib/types'
 import { LeaderboardCard } from './LeaderboardCard'
-
 import { LeaderboardRow } from './LeaderboardRow'
 
 interface LeaderboardProps {
@@ -9,7 +10,32 @@ interface LeaderboardProps {
   isRegistered: (entry: ProcessedEntry) => boolean
 }
 
-export function Leaderboard({ entries, pacePercentThreshold, isRegistered }: LeaderboardProps) {
+/**
+ * Computes the best valid lap from visible entries.
+ * @param entries Leaderboard entries currently rendered.
+ * @returns Fastest lap in milliseconds or null.
+ */
+function getBestOverallLap(entries: ProcessedEntry[]): number | null {
+  return entries.reduce((min, entry) => {
+    if (entry.bestLap === null)
+      return min
+    if (min === null)
+      return entry.bestLap
+    return entry.bestLap < min ? entry.bestLap : min
+  }, null as number | null)
+}
+
+/**
+ * Renders leaderboard entries in responsive layouts.
+ * @param props Component props object.
+ * @param props.entries Leaderboard entries to display.
+ * @param props.pacePercentThreshold Pace threshold used for badges.
+ * @param props.isRegistered Registration resolver for each entry.
+ * @returns Responsive leaderboard list.
+ */
+export function Leaderboard(props: LeaderboardProps) {
+  const { entries, pacePercentThreshold, isRegistered } = props
+
   if (entries.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -24,15 +50,7 @@ export function Leaderboard({ entries, pacePercentThreshold, isRegistered }: Lea
     )
   }
 
-  // Find overall best lap for percentage calculation
-  // Calculate the best lap from the current entries (filtered/sorted)
-  const bestOverallLap = entries.reduce((min, entry) => {
-    if (entry.bestLap === null)
-      return min
-    if (min === null)
-      return entry.bestLap
-    return entry.bestLap < min ? entry.bestLap : min
-  }, null as number | null)
+  const bestOverallLap = getBestOverallLap(entries)
 
   return (
     <>

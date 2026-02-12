@@ -1,6 +1,7 @@
 // @anchor: leaderboard/features/card-ui
 // @intent: Compact mobile card representation of a leaderboard entry.
 import type { ProcessedEntry } from '@/lib/types'
+import { useMemo } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { useLeaderboardEntry } from '@/hooks/useLeaderboardEntry'
@@ -22,16 +23,18 @@ interface LeaderboardCardProps {
  * @param prefix Key prefix for list context.
  * @returns Keyed split values for rendering.
  */
-function toKeyedSplits(splits: number[], prefix: 'best' | 'theor'): Array<{ key: string, value: number }> {
+function toKeyedSplits(splits: Array<number | null>, prefix: 'best' | 'theor'): Array<{ key: string, value: number }> {
   const occurrences = new Map<number, number>()
-  return splits.map((split) => {
-    const count = (occurrences.get(split) ?? 0) + 1
-    occurrences.set(split, count)
-    return {
-      key: `${prefix}-${split}-${count}`,
-      value: split,
-    }
-  })
+  return splits
+    .filter((split): split is number => split !== null)
+    .map((split) => {
+      const count = (occurrences.get(split) ?? 0) + 1
+      occurrences.set(split, count)
+      return {
+        key: `${prefix}-${split}-${count}`,
+        value: split,
+      }
+    })
 }
 
 /**
@@ -46,9 +49,10 @@ function toKeyedSplits(splits: number[], prefix: 'best' | 'theor'): Array<{ key:
  */
 export function LeaderboardCard(props: LeaderboardCardProps) {
   const { entry, position, bestOverallLap, pacePercentThreshold, isRegistered } = props
-  const { percentage, badgeClass, hasSplits } = useLeaderboardEntry(entry, bestOverallLap, pacePercentThreshold)
-  const bestLapSplits = toKeyedSplits(entry.bestLapSplits, 'best')
-  const theoreticalSplits = toKeyedSplits(entry.splits, 'theor')
+  const { percentage, badgeClass } = useLeaderboardEntry(entry, bestOverallLap, pacePercentThreshold)
+  const bestLapSplits = useMemo(() => toKeyedSplits(entry.bestLapSplits, 'best'), [entry.bestLapSplits])
+  const theoreticalSplits = useMemo(() => toKeyedSplits(entry.splits, 'theor'), [entry.splits])
+  const hasRenderableSplits = bestLapSplits.length > 0 || theoreticalSplits.length > 0
 
   return (
     <Card className={cardPadding.card}>
@@ -114,7 +118,7 @@ export function LeaderboardCard(props: LeaderboardCardProps) {
       </div>
 
       {/* Splits Section */}
-      {hasSplits && (
+      {hasRenderableSplits && (
         <div className="mt-2 pt-2 border-t">
           <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-1.5">
             Sectors

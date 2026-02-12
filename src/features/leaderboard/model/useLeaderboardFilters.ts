@@ -88,7 +88,7 @@ export function useLeaderboardFilters(
     return result
   }, [entries, effectiveSelectedClass, sortBy, sortAsc, showRegisteredOnly, isRegistered, enableClassGrouping, enableParticipantsFiltering])
 
-  const toggleSortDirection = () => setSortAsc(!sortAsc)
+  const toggleSortDirection = () => setSortAsc(prev => !prev)
 
   return {
     filtered,

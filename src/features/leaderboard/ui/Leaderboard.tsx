@@ -1,6 +1,8 @@
 // @anchor: leaderboard/features/list-ui
 // @intent: Renders leaderboard entries with mobile card and desktop row layouts.
 import type { ProcessedEntry } from '@/lib/types'
+import { useMemo } from 'react'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { LeaderboardCard } from './LeaderboardCard'
 import { LeaderboardRow } from './LeaderboardRow'
 
@@ -36,6 +38,12 @@ function getBestOverallLap(entries: ProcessedEntry[]): number | null {
 export function Leaderboard(props: LeaderboardProps) {
   const { entries, pacePercentThreshold, isRegistered } = props
 
+  const isDesktop = useMediaQuery('(min-width: 768px)')
+  const bestOverallLap = getBestOverallLap(entries)
+  const registrationByEntryId = useMemo(() => {
+    return new Map(entries.map(entry => [entry.id, isRegistered(entry)]))
+  }, [entries, isRegistered])
+
   if (entries.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -50,37 +58,21 @@ export function Leaderboard(props: LeaderboardProps) {
     )
   }
 
-  const bestOverallLap = getBestOverallLap(entries)
+  const EntryComponent = isDesktop ? LeaderboardRow : LeaderboardCard
+  const listClassName = isDesktop ? 'flex flex-col gap-1.5' : 'flex flex-col gap-2 sm:gap-2.5'
 
   return (
-    <>
-      {/* Mobile: Cards */}
-      <div className="flex flex-col gap-2 sm:gap-2.5 md:hidden">
-        {entries.map((entry, index) => (
-          <LeaderboardCard
-            key={entry.id}
-            entry={entry}
-            position={index + 1}
-            bestOverallLap={bestOverallLap}
-            pacePercentThreshold={pacePercentThreshold}
-            isRegistered={isRegistered(entry)}
-          />
-        ))}
-      </div>
-
-      {/* Desktop: Compact Rows */}
-      <div className="hidden md:flex md:flex-col md:gap-1.5">
-        {entries.map((entry, index) => (
-          <LeaderboardRow
-            key={entry.id}
-            entry={entry}
-            position={index + 1}
-            bestOverallLap={bestOverallLap}
-            pacePercentThreshold={pacePercentThreshold}
-            isRegistered={isRegistered(entry)}
-          />
-        ))}
-      </div>
-    </>
+    <div className={listClassName}>
+      {entries.map((entry, index) => (
+        <EntryComponent
+          key={entry.id}
+          entry={entry}
+          position={index + 1}
+          bestOverallLap={bestOverallLap}
+          pacePercentThreshold={pacePercentThreshold}
+          isRegistered={registrationByEntryId.get(entry.id) ?? false}
+        />
+      ))}
+    </div>
   )
 }

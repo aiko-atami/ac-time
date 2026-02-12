@@ -1,7 +1,7 @@
 // @anchor: leaderboard/features/championship-participants/model/use-championship-participants
 // @intent: Load participants list from configurable CSV URL and match leaderboard entries.
 import type { ProcessedEntry } from '@/lib/types'
-import { useEffect, useReducer } from 'react'
+import { useCallback, useEffect, useMemo, useReducer } from 'react'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 
@@ -10,6 +10,11 @@ interface Participant {
   carClass: string
   team?: string
   car: string
+}
+
+interface NormalizedParticipant {
+  nameKey: string
+  strictKey: string
 }
 
 /**
@@ -62,6 +67,39 @@ async function fetchParticipantsList(sourceUrl: string): Promise<Participant[]> 
 function buildParticipantsProxyUrl(sourceUrl: string): string {
   const search = new URLSearchParams({ csvUrl: sourceUrl })
   return `${API_URL}/api/participants?${search.toString()}`
+}
+
+/**
+ * Normalizes text for case-insensitive map keys.
+ * @param value Source text.
+ * @returns Trimmed lower-cased string.
+ */
+function normalizeText(value: string): string {
+  return value.trim().toLowerCase()
+}
+
+/**
+ * Builds deterministic driver name key (order-independent words).
+ * @param value Driver name.
+ * @returns Canonical key for matching.
+ */
+function toNameKey(value: string): string {
+  return normalizeText(value)
+    .split(/\s+/)
+    .filter(word => word.length > 0)
+    .sort()
+    .join(' ')
+}
+
+/**
+ * Builds strict key containing class, car and driver name signature.
+ * @param carClass Car class label.
+ * @param car Car model/name.
+ * @param nameKey Canonical driver name key.
+ * @returns Stable strict-match key.
+ */
+function toStrictKey(carClass: string, car: string, nameKey: string): string {
+  return `${normalizeText(carClass)}|${normalizeText(car)}|${nameKey}`
 }
 
 interface UseChampionshipParticipantsOptions {
@@ -145,50 +183,41 @@ export function useChampionshipParticipants(options: UseChampionshipParticipants
     }
   }, [normalizedParticipantsCsvUrl])
 
+  const normalizedParticipants = useMemo<NormalizedParticipant[]>(() => {
+    return participants.map((participant) => {
+      const nameKey = toNameKey(participant.driver)
+      return {
+        nameKey,
+        strictKey: toStrictKey(participant.carClass, participant.car, nameKey),
+      }
+    })
+  }, [participants])
+
+  const participantsByName = useMemo(() => {
+    return new Set(normalizedParticipants.map(participant => participant.nameKey))
+  }, [normalizedParticipants])
+
+  const participantsByStrictMatch = useMemo(() => {
+    return new Set(normalizedParticipants.map(participant => participant.strictKey))
+  }, [normalizedParticipants])
+
   /**
    * Checks whether entry exists in registered participants list.
    * @param entry Leaderboard entry.
    * @returns True when entry has registration match.
    */
-  const isRegistered = (entry: ProcessedEntry): boolean => {
-    if (!participants.length)
+  const isRegistered = useCallback((entry: ProcessedEntry): boolean => {
+    if (normalizedParticipants.length === 0)
       return false
-    return participants.some(p => checkParticipantMatch(entry, p, matchByDriverNameOnly))
-  }
+
+    const entryNameKey = toNameKey(entry.driverName)
+    if (matchByDriverNameOnly) {
+      return participantsByName.has(entryNameKey)
+    }
+
+    const strictKey = toStrictKey(entry.carClass, entry.carName, entryNameKey)
+    return participantsByStrictMatch.has(strictKey)
+  }, [matchByDriverNameOnly, normalizedParticipants.length, participantsByName, participantsByStrictMatch])
 
   return { participants, loading, isRegistered }
-}
-
-/**
- * Checks if a live server entry matches a registered participant.
- *
- * Logic matches:
- * 1. Driver Name (word-set equality, case-insensitive, order-independent)
- * 2. Car Class and Car Name checks are optional and enabled when classes are configured
- */
-function checkParticipantMatch(
-  entry: ProcessedEntry,
-  participant: Participant,
-  matchByDriverNameOnly: boolean,
-): boolean {
-  if (!matchByDriverNameOnly) {
-    if (entry.carClass.toLowerCase() !== participant.carClass.toLowerCase()) {
-      return false
-    }
-
-    if (entry.carName.trim().toLowerCase() !== participant.car.trim().toLowerCase()) {
-      return false
-    }
-  }
-
-  const entryNameParts = entry.driverName.toLowerCase().split(/\s+/).filter(p => p.length > 0)
-  const pNameParts = participant.driver.toLowerCase().split(/\s+/).filter(p => p.length > 0)
-
-  // If word counts differ, names don't match
-  if (entryNameParts.length !== pNameParts.length)
-    return false
-
-  // Check if every word in entry name exists in participant name
-  const pNameSet = new Set(pNameParts)
-  return entryNameParts.every(part => pNameSet.has(part))
 }

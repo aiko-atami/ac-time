@@ -16,5 +16,8 @@ export const DEFAULT_CLASS_RULES: CarClassRule[] = [
 ]
 
 export const DEFAULT_SERVER_URL = 'https://ac8.yoklmnracing.ru/api/live-timings/leaderboard.json'
+export const DEFAULT_PACE_PERCENT_THRESHOLD = 107
+export const MIN_PACE_PERCENT_THRESHOLD = 101
+export const MAX_PACE_PERCENT_THRESHOLD = 115
 export const DEFAULT_REFRESH_INTERVAL = 5 * 60000
 export const DEFAULT_SETTINGS_PRESET_NAME = 'Default'

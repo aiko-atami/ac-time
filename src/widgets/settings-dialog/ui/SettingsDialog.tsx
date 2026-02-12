@@ -11,8 +11,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { PresetControls } from '@/features/settings/ui/PresetControls'
 import { PresetManagementDialog } from '@/features/settings/ui/PresetManagementDialog'
+import {
+  DEFAULT_PACE_PERCENT_THRESHOLD,
+  MAX_PACE_PERCENT_THRESHOLD,
+  MIN_PACE_PERCENT_THRESHOLD,
+} from '@/lib/constants'
 
 interface SettingsDialogProps {
   presets: SettingsPreset[]
@@ -51,12 +58,26 @@ export function SettingsDialog({
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [managementOpen, setManagementOpen] = useState(false)
   const [pendingPresetId, setPendingPresetId] = useState<string | null>(activePresetId)
+  const [pacePercentThreshold, setPacePercentThreshold] = useState(
+    () => activeSettings?.pacePercentThreshold?.toString() ?? DEFAULT_PACE_PERCENT_THRESHOLD.toString(),
+  )
+
+  const selectedPreset = presets.find(preset => preset.id === pendingPresetId) ?? null
+  const selectedSettings = selectedPreset?.settings ?? activeSettings
+  const thresholdError = validatePacePercentThreshold(pacePercentThreshold)
+  const hasThresholdChanged = selectedSettings
+    ? Number.parseInt(pacePercentThreshold, 10) !== selectedSettings.pacePercentThreshold
+    : false
+  const canSave = Boolean(pendingPresetId)
+    && !thresholdError
+    && (pendingPresetId !== activePresetId || hasThresholdChanged)
 
   /**
    * Opens quick settings dialog for preset selection.
    */
   const openSettings = () => {
     setPendingPresetId(activePresetId)
+    setPacePercentThreshold((activeSettings?.pacePercentThreshold ?? DEFAULT_PACE_PERCENT_THRESHOLD).toString())
     setSettingsOpen(true)
   }
 
@@ -68,6 +89,7 @@ export function SettingsDialog({
     setSettingsOpen(open)
     if (!open) {
       setPendingPresetId(activePresetId)
+      setPacePercentThreshold((activeSettings?.pacePercentThreshold ?? DEFAULT_PACE_PERCENT_THRESHOLD).toString())
     }
   }
 
@@ -77,6 +99,8 @@ export function SettingsDialog({
    */
   const handleSelectPreset = (presetId: string) => {
     setPendingPresetId(presetId)
+    const preset = presets.find(item => item.id === presetId)
+    setPacePercentThreshold((preset?.settings.pacePercentThreshold ?? DEFAULT_PACE_PERCENT_THRESHOLD).toString())
   }
 
   /**
@@ -92,9 +116,22 @@ export function SettingsDialog({
    * Commits pending preset selection and closes quick settings dialog.
    */
   const handleSave = () => {
-    if (pendingPresetId && pendingPresetId !== activePresetId) {
+    if (!pendingPresetId || thresholdError) {
+      return
+    }
+
+    const preset = presets.find(item => item.id === pendingPresetId)
+    if (preset) {
+      onSavePreset(pendingPresetId, {
+        ...preset.settings,
+        pacePercentThreshold: Number.parseInt(pacePercentThreshold, 10),
+      })
+    }
+
+    if (pendingPresetId !== activePresetId) {
       onSelectPreset(pendingPresetId)
     }
+
     setSettingsOpen(false)
   }
 
@@ -136,8 +173,40 @@ export function SettingsDialog({
             />
           </div>
 
+          <div className="grid gap-1.5">
+            <Label htmlFor="quick-pace-threshold">
+              Pace Threshold (%)
+            </Label>
+            <Input
+              id="quick-pace-threshold"
+              name="quickPacePercentThreshold"
+              type="number"
+              inputMode="numeric"
+              min={MIN_PACE_PERCENT_THRESHOLD}
+              max={MAX_PACE_PERCENT_THRESHOLD}
+              step={1}
+              value={pacePercentThreshold}
+              onChange={event => setPacePercentThreshold(event.target.value)}
+              aria-invalid={Boolean(thresholdError)}
+              aria-describedby={thresholdError ? 'quick-pace-threshold-error' : 'quick-pace-threshold-help'}
+            />
+            <p id="quick-pace-threshold-help" className="text-[0.8rem] text-muted-foreground">
+              Range:
+              {' '}
+              {MIN_PACE_PERCENT_THRESHOLD}
+              -
+              {MAX_PACE_PERCENT_THRESHOLD}
+              %
+            </p>
+            {thresholdError && (
+              <p id="quick-pace-threshold-error" className="text-xs text-destructive" aria-live="polite">
+                {thresholdError}
+              </p>
+            )}
+          </div>
+
           <DialogFooter className="pt-2">
-            <Button type="button" onClick={handleSave} disabled={!pendingPresetId || pendingPresetId === activePresetId}>
+            <Button type="button" onClick={handleSave} disabled={!canSave}>
               Save
             </Button>
           </DialogFooter>
@@ -159,4 +228,27 @@ export function SettingsDialog({
       )}
     </>
   )
+}
+
+/**
+ * Validates allowed pace threshold percentage.
+ * @param value Raw input string.
+ * @returns Validation error text or null.
+ */
+function validatePacePercentThreshold(value: string): string | null {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return 'Threshold is required.'
+  }
+
+  const numeric = Number(trimmed)
+  if (!Number.isFinite(numeric) || !Number.isInteger(numeric)) {
+    return 'Threshold must be an integer.'
+  }
+
+  if (numeric < MIN_PACE_PERCENT_THRESHOLD || numeric > MAX_PACE_PERCENT_THRESHOLD) {
+    return `Threshold must be between ${MIN_PACE_PERCENT_THRESHOLD} and ${MAX_PACE_PERCENT_THRESHOLD}.`
+  }
+
+  return null
 }

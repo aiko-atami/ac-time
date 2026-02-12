@@ -5,10 +5,11 @@ import { LeaderboardRow } from './LeaderboardRow'
 
 interface LeaderboardProps {
   entries: ProcessedEntry[]
+  pacePercentThreshold: number
   isRegistered: (entry: ProcessedEntry) => boolean
 }
 
-export function Leaderboard({ entries, isRegistered }: LeaderboardProps) {
+export function Leaderboard({ entries, pacePercentThreshold, isRegistered }: LeaderboardProps) {
   if (entries.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -43,6 +44,7 @@ export function Leaderboard({ entries, isRegistered }: LeaderboardProps) {
             entry={entry}
             position={index + 1}
             bestOverallLap={bestOverallLap}
+            pacePercentThreshold={pacePercentThreshold}
             isRegistered={isRegistered(entry)}
           />
         ))}
@@ -56,6 +58,7 @@ export function Leaderboard({ entries, isRegistered }: LeaderboardProps) {
             entry={entry}
             position={index + 1}
             bestOverallLap={bestOverallLap}
+            pacePercentThreshold={pacePercentThreshold}
             isRegistered={isRegistered(entry)}
           />
         ))}

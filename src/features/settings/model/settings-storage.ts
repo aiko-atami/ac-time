@@ -3,9 +3,12 @@
 import type { CarClassRule, SettingsPreset, SettingsPresetsState, SettingsSnapshot } from '@/lib/types'
 import {
   DEFAULT_CLASS_RULES,
+  DEFAULT_PACE_PERCENT_THRESHOLD,
   DEFAULT_PARTICIPANTS_CSV_URL,
   DEFAULT_SERVER_URL,
   LEGACY_SETTINGS_PRESETS_STORAGE_KEY,
+  MAX_PACE_PERCENT_THRESHOLD,
+  MIN_PACE_PERCENT_THRESHOLD,
   SETTINGS_PRESETS_STORAGE_KEY,
 } from '@/lib/constants'
 import { dedupeCarClassRules } from './serialize'
@@ -23,6 +26,7 @@ export function createDefaultSettingsSnapshot(): SettingsSnapshot {
     participants: {
       csvUrl: DEFAULT_PARTICIPANTS_CSV_URL,
     },
+    pacePercentThreshold: DEFAULT_PACE_PERCENT_THRESHOLD,
   }
 }
 
@@ -232,6 +236,7 @@ function createDefaultPresetsState(): SettingsPresetsState {
           participants: {
             csvUrl: 'https://github.com/aiko-atami/ac-time/releases/download/championship-537/participants-537.csv',
           },
+          pacePercentThreshold: DEFAULT_PACE_PERCENT_THRESHOLD,
         },
         createdAt: '2026-02-11T15:18:33.712Z',
         updatedAt: '2026-02-12T12:35:52.401Z',
@@ -254,6 +259,7 @@ function createDefaultPresetsState(): SettingsPresetsState {
           participants: {
             csvUrl: 'https://github.com/aiko-atami/ac-time/releases/download/championship-537/participants-537.csv',
           },
+          pacePercentThreshold: DEFAULT_PACE_PERCENT_THRESHOLD,
         },
         createdAt: '2026-02-11T15:19:13.081Z',
         updatedAt: '2026-02-12T12:36:05.889Z',
@@ -267,6 +273,7 @@ function createDefaultPresetsState(): SettingsPresetsState {
           participants: {
             csvUrl: 'https://github.com/aiko-atami/ac-time/releases/download/championship-538/participants-538.csv',
           },
+          pacePercentThreshold: DEFAULT_PACE_PERCENT_THRESHOLD,
         },
         createdAt: '2026-02-11T15:25:05.113Z',
         updatedAt: '2026-02-12T12:36:57.429Z',
@@ -353,7 +360,27 @@ function normalizeSnapshot(snapshot: unknown): SettingsSnapshot {
     participants: {
       csvUrl: normalizeOptionalHttpUrl(participants?.csvUrl, defaults.participants.csvUrl),
     },
+    pacePercentThreshold: normalizePacePercentThreshold(source.pacePercentThreshold, defaults.pacePercentThreshold),
   }
+}
+
+/**
+ * Validates pace percentage threshold value.
+ * @param value Candidate threshold value.
+ * @param fallback Fallback threshold.
+ * @returns Valid threshold in configured range.
+ */
+function normalizePacePercentThreshold(value: unknown, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return fallback
+  }
+
+  const rounded = Math.round(value)
+  if (rounded < MIN_PACE_PERCENT_THRESHOLD || rounded > MAX_PACE_PERCENT_THRESHOLD) {
+    return fallback
+  }
+
+  return rounded
 }
 
 /**

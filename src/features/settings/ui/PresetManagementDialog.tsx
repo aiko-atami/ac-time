@@ -31,6 +31,11 @@ import {
 } from '@/components/ui/select'
 import { formatCarClasses, parseCarClasses } from '@/features/settings/model/serialize'
 import { SettingsFormFields } from '@/features/settings/ui/SettingsFormFields'
+import {
+  DEFAULT_PACE_PERCENT_THRESHOLD,
+  MAX_PACE_PERCENT_THRESHOLD,
+  MIN_PACE_PERCENT_THRESHOLD,
+} from '@/lib/constants'
 import { useToast } from '@/shared/ui/toast'
 
 interface PresetManagementDialogProps {
@@ -51,6 +56,7 @@ const EMPTY_SETTINGS: SettingsSnapshot = {
   participants: {
     csvUrl: '',
   },
+  pacePercentThreshold: DEFAULT_PACE_PERCENT_THRESHOLD,
 }
 
 /**
@@ -85,6 +91,7 @@ export function PresetManagementDialog({
   const [serverUrl, setServerUrl] = useState(() => initialSettings.serverUrl)
   const [participantsCsvUrl, setParticipantsCsvUrl] = useState(() => initialSettings.participants.csvUrl)
   const [classesCsv, setClassesCsv] = useState(() => formatCarClasses(initialSettings.carClasses))
+  const [pacePercentThreshold, setPacePercentThreshold] = useState(() => initialSettings.pacePercentThreshold.toString())
   const [presetName, setPresetName] = useState(() => initialPresetName)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
@@ -97,6 +104,7 @@ export function PresetManagementDialog({
     setServerUrl(safeSettings.serverUrl)
     setParticipantsCsvUrl(safeSettings.participants.csvUrl)
     setClassesCsv(formatCarClasses(safeSettings.carClasses))
+    setPacePercentThreshold(safeSettings.pacePercentThreshold.toString())
   }
 
   /**
@@ -129,6 +137,7 @@ export function PresetManagementDialog({
 
   const serverUrlError = validateRequiredHttpUrl(serverUrl)
   const participantsCsvUrlError = validateOptionalHttpUrl(participantsCsvUrl)
+  const pacePercentThresholdError = validatePacePercentThreshold(pacePercentThreshold)
   const presetNameError = validatePresetName({
     value: presetName,
     presets,
@@ -144,9 +153,11 @@ export function PresetManagementDialog({
   const canPersist = Boolean(managedPresetId)
     && !serverUrlError
     && !participantsCsvUrlError
+    && !pacePercentThresholdError
     && !presetNameError
   const canCreate = !serverUrlError
     && !participantsCsvUrlError
+    && !pacePercentThresholdError
     && !createPresetNameError
 
   /**
@@ -172,7 +183,7 @@ export function PresetManagementDialog({
       return
     }
 
-    const nextSnapshot = buildDraftSnapshot(serverUrl, participantsCsvUrl, classesCsv)
+    const nextSnapshot = buildDraftSnapshot(serverUrl, participantsCsvUrl, classesCsv, pacePercentThreshold)
     onRenamePreset(managedPresetId, presetName)
     onSavePreset(managedPresetId, nextSnapshot)
     success('Preset saved.')
@@ -186,7 +197,7 @@ export function PresetManagementDialog({
       return
     }
 
-    const nextSnapshot = buildDraftSnapshot(serverUrl, participantsCsvUrl, classesCsv)
+    const nextSnapshot = buildDraftSnapshot(serverUrl, participantsCsvUrl, classesCsv, pacePercentThreshold)
     onCreatePreset(nextSnapshot, presetName)
     success('Preset created.')
   }
@@ -260,10 +271,15 @@ export function PresetManagementDialog({
                   classesText={classesCsv}
                   serverUrlError={serverUrlError ?? undefined}
                   participantsCsvUrlError={participantsCsvUrlError ?? undefined}
+                  pacePercentThreshold={pacePercentThreshold}
+                  pacePercentThresholdError={pacePercentThresholdError ?? undefined}
+                  pacePercentThresholdMin={MIN_PACE_PERCENT_THRESHOLD}
+                  pacePercentThresholdMax={MAX_PACE_PERCENT_THRESHOLD}
                   classesHints={classesHints}
                   onServerUrlChange={setServerUrl}
                   onParticipantsCsvUrlChange={setParticipantsCsvUrl}
                   onClassesTextChange={setClassesCsv}
+                  onPacePercentThresholdChange={setPacePercentThreshold}
                 />
               </CardContent>
               <CardFooter className="justify-between gap-2 border-t-0 bg-transparent pt-0">
@@ -348,6 +364,29 @@ function validateOptionalHttpUrl(value: string): string | null {
   catch {
     return 'URL is invalid.'
   }
+}
+
+/**
+ * Validates allowed pace threshold percentage.
+ * @param value Raw input string.
+ * @returns Validation error text or null.
+ */
+function validatePacePercentThreshold(value: string): string | null {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return 'Threshold is required.'
+  }
+
+  const numeric = Number(trimmed)
+  if (!Number.isFinite(numeric) || !Number.isInteger(numeric)) {
+    return 'Threshold must be an integer.'
+  }
+
+  if (numeric < MIN_PACE_PERCENT_THRESHOLD || numeric > MAX_PACE_PERCENT_THRESHOLD) {
+    return `Threshold must be between ${MIN_PACE_PERCENT_THRESHOLD} and ${MAX_PACE_PERCENT_THRESHOLD}.`
+  }
+
+  return null
 }
 
 interface ValidatePresetNameParams {
@@ -457,12 +496,14 @@ function buildCarClassesHints(classesCsv: string): string[] {
  * @param serverUrl Draft server URL.
  * @param participantsCsvUrl Draft participants CSV URL.
  * @param classesCsv Draft car class rules text.
+ * @param pacePercentThreshold Draft pace threshold in percent.
  * @returns Normalized snapshot payload for storage.
  */
 function buildDraftSnapshot(
   serverUrl: string,
   participantsCsvUrl: string,
   classesCsv: string,
+  pacePercentThreshold: string,
 ): SettingsSnapshot {
   return {
     serverUrl: serverUrl.trim(),
@@ -470,5 +511,6 @@ function buildDraftSnapshot(
       csvUrl: participantsCsvUrl.trim(),
     },
     carClasses: parseCarClasses(classesCsv),
+    pacePercentThreshold: Number.parseInt(pacePercentThreshold, 10),
   }
 }

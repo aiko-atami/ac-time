@@ -10,11 +10,12 @@ interface LeaderboardCardProps {
   entry: ProcessedEntry
   position: number
   bestOverallLap: number | null
+  pacePercentThreshold: number
   isRegistered?: boolean
 }
 
-export function LeaderboardCard({ entry, position, bestOverallLap, isRegistered }: LeaderboardCardProps) {
-  const { percentage, badgeClass, hasSplits } = useLeaderboardEntry(entry, bestOverallLap)
+export function LeaderboardCard({ entry, position, bestOverallLap, pacePercentThreshold, isRegistered }: LeaderboardCardProps) {
+  const { percentage, badgeClass, hasSplits } = useLeaderboardEntry(entry, bestOverallLap, pacePercentThreshold)
 
   return (
     <Card className={cardPadding.card}>

@@ -82,6 +82,7 @@ export interface SettingsSnapshot {
   serverUrl: string
   carClasses: CarClassRule[]
   participants: ParticipantSourceConfig
+  pacePercentThreshold: number
 }
 
 export interface SettingsPreset {

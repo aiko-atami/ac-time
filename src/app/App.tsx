@@ -9,7 +9,7 @@ import { useChampionshipParticipants } from '@/features/championship-participant
 import { useLeaderboardFilters } from '@/features/leaderboard/model/useLeaderboardFilters'
 import { useSettingsPresets } from '@/features/settings/model/useSettingsPresets'
 import { useLeaderboard } from '@/hooks/useLeaderboard'
-import { DEFAULT_REFRESH_INTERVAL } from '@/lib/constants'
+import { DEFAULT_PACE_PERCENT_THRESHOLD, DEFAULT_REFRESH_INTERVAL } from '@/lib/constants'
 import { SettingsDialog } from '@/widgets/settings-dialog/ui/SettingsDialog'
 
 const EMPTY_LEADERBOARD_ENTRIES: ProcessedEntry[] = []
@@ -169,7 +169,11 @@ export function App() {
         />
 
         {/* Leaderboard */}
-        <Leaderboard entries={filtered} isRegistered={isRegistered} />
+        <Leaderboard
+          entries={filtered}
+          pacePercentThreshold={activeSettings?.pacePercentThreshold ?? DEFAULT_PACE_PERCENT_THRESHOLD}
+          isRegistered={isRegistered}
+        />
       </>
     )
   }

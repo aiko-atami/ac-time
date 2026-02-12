@@ -8,12 +8,17 @@ interface SettingsFormFieldsProps {
   serverUrl: string
   participantsCsvUrl: string
   classesText: string
+  pacePercentThreshold: string
+  pacePercentThresholdMin: number
+  pacePercentThresholdMax: number
   serverUrlError?: string
   participantsCsvUrlError?: string
+  pacePercentThresholdError?: string
   classesHints?: string[]
   onServerUrlChange: (value: string) => void
   onParticipantsCsvUrlChange: (value: string) => void
   onClassesTextChange: (value: string) => void
+  onPacePercentThresholdChange: (value: string) => void
 }
 
 /**
@@ -22,24 +27,34 @@ interface SettingsFormFieldsProps {
  * @param props.serverUrl Current server URL input value.
  * @param props.participantsCsvUrl Current participants CSV URL input value.
  * @param props.classesText Current multiline car classes input value.
+ * @param props.pacePercentThreshold Current pace threshold input value.
+ * @param props.pacePercentThresholdMin Minimal accepted threshold value.
+ * @param props.pacePercentThresholdMax Maximal accepted threshold value.
  * @param props.serverUrlError Optional validation error text for server URL field.
  * @param props.participantsCsvUrlError Optional validation error text for participants CSV URL field.
+ * @param props.pacePercentThresholdError Optional validation error text for threshold field.
  * @param props.classesHints Optional warning hints for car class parser behavior.
  * @param props.onServerUrlChange Callback invoked on server URL input change.
  * @param props.onParticipantsCsvUrlChange Callback invoked on participants CSV URL input change.
  * @param props.onClassesTextChange Callback invoked on car classes textarea change.
+ * @param props.onPacePercentThresholdChange Callback invoked on threshold input change.
  * @returns Settings form fields block.
  */
 export function SettingsFormFields({
   serverUrl,
   participantsCsvUrl,
   classesText,
+  pacePercentThreshold,
+  pacePercentThresholdMin,
+  pacePercentThresholdMax,
   serverUrlError,
   participantsCsvUrlError,
+  pacePercentThresholdError,
   classesHints,
   onServerUrlChange,
   onParticipantsCsvUrlChange,
   onClassesTextChange,
+  onPacePercentThresholdChange,
 }: SettingsFormFieldsProps) {
   return (
     <div className="grid gap-4 py-2">
@@ -81,6 +96,33 @@ export function SettingsFormFields({
         {participantsCsvUrlError && (
           <p id="participants-csv-url-error" className="text-xs text-destructive" aria-live="polite">
             {participantsCsvUrlError}
+          </p>
+        )}
+      </div>
+
+      <div className="grid gap-1.5">
+        <Label htmlFor="pace-percent-threshold">
+          Pace Threshold (%)
+        </Label>
+        <Input
+          id="pace-percent-threshold"
+          name="pacePercentThreshold"
+          type="number"
+          inputMode="numeric"
+          min={pacePercentThresholdMin}
+          max={pacePercentThresholdMax}
+          step={1}
+          value={pacePercentThreshold}
+          onChange={e => onPacePercentThresholdChange(e.target.value)}
+          aria-invalid={Boolean(pacePercentThresholdError)}
+          aria-describedby={pacePercentThresholdError ? 'pace-percent-threshold-error' : 'pace-percent-threshold-help'}
+        />
+        <p id="pace-percent-threshold-help" className="text-[0.8rem] text-muted-foreground">
+          Highlights drivers above this percentage of the fastest lap.
+        </p>
+        {pacePercentThresholdError && (
+          <p id="pace-percent-threshold-error" className="text-xs text-destructive" aria-live="polite">
+            {pacePercentThresholdError}
           </p>
         )}
       </div>

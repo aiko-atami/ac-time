@@ -7,7 +7,7 @@ import { Badge } from '@/shared/ui/badge'
 import { Card } from '@/shared/ui/card'
 import { getLeaderboardEntryMeta } from '../../model/leaderboard/useLeaderboardEntry'
 import { CarClassBadge } from './CarClassBadge'
-import { cardPadding, sectorBadge } from './styles'
+import { cardPadding, fontSize, sectorBadge, timeMeta } from './styles'
 
 interface LeaderboardCardProps {
   entry: ProcessedEntry
@@ -49,7 +49,7 @@ function toKeyedSplits(splits: Array<number | null>, prefix: 'best' | 'theor'): 
  */
 export function LeaderboardCard(props: LeaderboardCardProps) {
   const { entry, position, bestOverallLap, pacePercentThreshold, isRegistered } = props
-  const { percentage, badgeClass } = getLeaderboardEntryMeta(entry, bestOverallLap, pacePercentThreshold)
+  const { percentage, deltaText, badgeClass } = getLeaderboardEntryMeta(entry, bestOverallLap, pacePercentThreshold)
   const bestLapSplits = useMemo(() => toKeyedSplits(entry.bestLapSplits, 'best'), [entry.bestLapSplits])
   const theoreticalSplits = useMemo(() => toKeyedSplits(entry.splits, 'theor'), [entry.splits])
   const hasRenderableSplits = bestLapSplits.length > 0 || theoreticalSplits.length > 0
@@ -99,6 +99,9 @@ export function LeaderboardCard(props: LeaderboardCardProps) {
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold font-mono text-primary">
               {formatTime(entry.bestLap)}
+            </span>
+            <span className={`${fontSize.delta} ${timeMeta.delta}`}>
+              {deltaText}
             </span>
             {percentage && percentage >= 100 && (
               <Badge variant="outline" className={`h-5 px-1.5 font-mono text-[10px] ${badgeClass}`}>

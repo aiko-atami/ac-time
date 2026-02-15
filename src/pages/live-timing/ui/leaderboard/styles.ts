@@ -17,7 +17,12 @@ export const fontSize = {
   driverRow: 'text-sm',
   secondary: 'text-xs',
   time: 'text-sm',
+  delta: 'text-xs',
   label: 'text-xs',
+} as const
+
+export const timeMeta = {
+  delta: 'font-mono tabular-nums text-muted-foreground',
 } as const
 
 // Sector badge styles

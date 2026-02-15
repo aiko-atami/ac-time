@@ -1,9 +1,13 @@
+// @anchor: leaderboard/pages/live-timing/model/use-leaderboard-entry
+// @intent: Derive presentational metadata for leaderboard rows and cards.
 import type { ProcessedEntry } from '@/shared/types'
 import { DEFAULT_PACE_PERCENT_THRESHOLD } from '@/shared/config/constants'
-import { formatTime } from '@/shared/lib/utils'
+import { formatDeltaTime, formatTime } from '@/shared/lib/utils'
 
 interface UseLeaderboardEntryResult {
   percentage: number | null
+  deltaToLeaderMs: number | null
+  deltaText: string
   badgeClass: string
   tooltipText: string
   hasSplits: boolean
@@ -19,6 +23,13 @@ export function getLeaderboardEntryMeta(
     = entry.bestLap && bestOverallLap && bestOverallLap > 0
       ? (entry.bestLap / bestOverallLap) * 100
       : null
+
+  // Calculate absolute gap to leader in milliseconds.
+  const deltaToLeaderMs
+    = entry.bestLap !== null && bestOverallLap !== null
+      ? Math.max(0, entry.bestLap - bestOverallLap)
+      : null
+  const deltaText = formatDeltaTime(deltaToLeaderMs)
 
   // Determine badge styling based on percentage
   let badgeClass = 'bg-muted text-muted-foreground hover:bg-muted/80'
@@ -51,6 +62,8 @@ export function getLeaderboardEntryMeta(
 
   return {
     percentage,
+    deltaToLeaderMs,
+    deltaText,
     badgeClass,
     tooltipText: buildTooltipText(),
     hasSplits,

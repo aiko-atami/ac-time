@@ -1,6 +1,6 @@
 // @anchor: leaderboard/features/class-badge-ui
 // @intent: Visual badge for displaying entry car class.
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@/shared/ui/badge'
 
 interface CarClassBadgeProps {
   carClass: string

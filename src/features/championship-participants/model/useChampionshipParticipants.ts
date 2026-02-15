@@ -1,6 +1,6 @@
 // @anchor: leaderboard/features/championship-participants/model/use-championship-participants
 // @intent: Load participants list from configurable CSV URL and match leaderboard entries.
-import type { ProcessedEntry } from '@/lib/types'
+import type { ProcessedEntry } from '@/shared/types'
 import { useCallback, useEffect, useMemo, useReducer } from 'react'
 
 const API_URL = import.meta.env.VITE_API_URL || ''

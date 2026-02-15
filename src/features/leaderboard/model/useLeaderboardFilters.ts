@@ -1,6 +1,6 @@
 // @anchor: leaderboard/features/leaderboard/model/use-leaderboard-filters
 // @intent: Provide client-side class/registration filters and sorting for leaderboard entries.
-import type { ProcessedEntry } from '@/lib/types'
+import type { ProcessedEntry } from '@/shared/types'
 import { useMemo, useState } from 'react'
 
 type SortField = 'lapTime' | 'driver' | 'laps'

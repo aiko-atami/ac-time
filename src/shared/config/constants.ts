@@ -1,6 +1,6 @@
 // @anchor: leaderboard/shared/constants
 // @intent: Shared constants for defaults, API endpoints, and localStorage keys.
-import type { CarClassRule } from './types'
+import type { CarClassRule } from '@/shared/types'
 
 export const DEFAULT_PARTICIPANTS_CSV_URL = ''
 

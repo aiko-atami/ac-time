@@ -1,8 +1,8 @@
 // @anchor: leaderboard/features/settings/ui/settings-form-fields
 // @intent: Visual form fields for editable settings snapshot values.
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/shared/ui/input'
+import { Label } from '@/shared/ui/label'
+import { Textarea } from '@/shared/ui/textarea'
 
 interface SettingsFormFieldsProps {
   serverUrl: string

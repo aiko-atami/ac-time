@@ -1,12 +1,12 @@
 // @anchor: leaderboard/features/card-ui
 // @intent: Compact mobile card representation of a leaderboard entry.
-import type { ProcessedEntry } from '@/lib/types'
+import type { ProcessedEntry } from '@/shared/types'
 import { useMemo } from 'react'
-import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
-import { useLeaderboardEntry } from '@/hooks/useLeaderboardEntry'
-import { cardPadding, sectorBadge } from '@/lib/styles'
+import { cardPadding, sectorBadge } from '@/shared/lib/styles'
 import { formatTime } from '@/shared/lib/utils'
+import { Badge } from '@/shared/ui/badge'
+import { Card } from '@/shared/ui/card'
+import { useLeaderboardEntry } from '../model/useLeaderboardEntry'
 import { CarClassBadge } from './CarClassBadge'
 
 interface LeaderboardCardProps {

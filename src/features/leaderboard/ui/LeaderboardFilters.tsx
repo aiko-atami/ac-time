@@ -1,15 +1,15 @@
 // @anchor: leaderboard/features/filters-ui
 // @intent: Stateless filter controls for class, sorting and registration visibility.
 import { IconArrowDown, IconArrowUp } from '@tabler/icons-react'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@/shared/ui/button'
+import { Checkbox } from '@/shared/ui/checkbox'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/shared/ui/select'
 
 interface LeaderboardFiltersProps {
   classes: string[]

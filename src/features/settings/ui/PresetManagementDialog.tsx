@@ -1,7 +1,12 @@
 // @anchor: leaderboard/features/settings/ui/preset-management-dialog
 // @intent: Dedicated dialog for creating, editing, renaming and deleting settings presets.
-import type { SettingsPreset, SettingsSnapshot } from '@/lib/types'
+import type { SettingsPreset, SettingsSnapshot } from '@/shared/types'
 import { useMemo, useState } from 'react'
+import {
+  DEFAULT_PACE_PERCENT_THRESHOLD,
+  MAX_PACE_PERCENT_THRESHOLD,
+  MIN_PACE_PERCENT_THRESHOLD,
+} from '@/shared/config/constants'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,32 +16,27 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardFooter } from '@/components/ui/card'
+} from '@/shared/ui/alert-dialog'
+import { Button } from '@/shared/ui/button'
+import { Card, CardContent, CardFooter } from '@/shared/ui/card'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+} from '@/shared/ui/dialog'
+import { Input } from '@/shared/ui/input'
+import { Label } from '@/shared/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { formatCarClasses, parseCarClasses } from '@/features/settings/model/serialize'
-import { SettingsFormFields } from '@/features/settings/ui/SettingsFormFields'
-import {
-  DEFAULT_PACE_PERCENT_THRESHOLD,
-  MAX_PACE_PERCENT_THRESHOLD,
-  MIN_PACE_PERCENT_THRESHOLD,
-} from '@/lib/constants'
+} from '@/shared/ui/select'
 import { useToast } from '@/shared/ui/toast'
+import { formatCarClasses, parseCarClasses } from '../model/serialize'
+import { SettingsFormFields } from './SettingsFormFields'
 
 interface PresetManagementDialogProps {
   open: boolean

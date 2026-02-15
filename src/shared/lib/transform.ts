@@ -5,7 +5,7 @@ import type {
   Driver,
   LeaderboardData,
   ProcessedEntry,
-} from '@/lib/types'
+} from '@/shared/types'
 
 /**
  * Resolves car class by configured car rules.

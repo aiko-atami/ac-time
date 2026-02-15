@@ -1,6 +1,6 @@
 // @anchor: leaderboard/features/settings/model/use-settings-presets
 // @intent: React hook that exposes preset CRUD and active settings state.
-import type { SettingsPreset, SettingsSnapshot } from '@/lib/types'
+import type { SettingsPreset, SettingsSnapshot } from '@/shared/types'
 import { useMemo, useState } from 'react'
 import {
   createPreset,

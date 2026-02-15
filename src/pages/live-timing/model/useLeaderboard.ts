@@ -1,7 +1,7 @@
-import type { CarClassRule, ProcessedLeaderboard } from '@/lib/types'
+import type { CarClassRule, ProcessedLeaderboard } from '@/shared/types'
 import { useEffect, useRef, useState } from 'react'
-import { DEFAULT_CLASS_RULES } from '@/lib/constants'
 import { fetchLeaderboard } from '@/shared/api/leaderboard'
+import { DEFAULT_CLASS_RULES } from '@/shared/config/constants'
 
 interface UseLeaderboardOptions {
   refreshInterval?: number // Auto-refresh interval in milliseconds

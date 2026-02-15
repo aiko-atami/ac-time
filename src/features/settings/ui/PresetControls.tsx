@@ -1,15 +1,15 @@
 // @anchor: leaderboard/features/settings/ui/preset-controls
 // @intent: Minimal preset controls for quick preset switching from settings dialog.
-import type { SettingsPreset } from '@/lib/types'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
+import type { SettingsPreset } from '@/shared/types'
+import { Button } from '@/shared/ui/button'
+import { Label } from '@/shared/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/shared/ui/select'
 
 interface PresetControlsProps {
   presets: SettingsPreset[]

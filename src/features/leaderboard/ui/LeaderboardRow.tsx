@@ -1,11 +1,11 @@
 // @anchor: leaderboard/features/row-ui
 // @intent: Dense desktop row representation of a leaderboard entry.
-import type { ProcessedEntry } from '@/lib/types'
-import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
-import { useLeaderboardEntry } from '@/hooks/useLeaderboardEntry'
-import { cardPadding } from '@/lib/styles'
+import type { ProcessedEntry } from '@/shared/types'
+import { cardPadding } from '@/shared/lib/styles'
 import { formatTime } from '@/shared/lib/utils'
+import { Badge } from '@/shared/ui/badge'
+import { Card } from '@/shared/ui/card'
+import { useLeaderboardEntry } from '../model/useLeaderboardEntry'
 import { CarClassBadge } from './CarClassBadge'
 
 interface LeaderboardRowProps {

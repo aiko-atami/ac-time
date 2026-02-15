@@ -1,8 +1,8 @@
 // @anchor: leaderboard/features/list-ui
 // @intent: Renders leaderboard entries with mobile card and desktop row layouts.
-import type { ProcessedEntry } from '@/lib/types'
+import type { ProcessedEntry } from '@/shared/types'
 import { useMemo } from 'react'
-import { useMediaQuery } from '@/hooks/useMediaQuery'
+import { useMediaQuery } from '@/shared/lib/useMediaQuery'
 import { LeaderboardCard } from './LeaderboardCard'
 import { LeaderboardRow } from './LeaderboardRow'
 

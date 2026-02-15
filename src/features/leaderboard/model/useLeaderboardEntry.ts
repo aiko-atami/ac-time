@@ -1,5 +1,5 @@
-import type { ProcessedEntry } from '@/lib/types'
-import { DEFAULT_PACE_PERCENT_THRESHOLD } from '@/lib/constants'
+import type { ProcessedEntry } from '@/shared/types'
+import { DEFAULT_PACE_PERCENT_THRESHOLD } from '@/shared/config/constants'
 import { formatTime } from '@/shared/lib/utils'
 
 interface UseLeaderboardEntryResult {

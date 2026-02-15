@@ -1,6 +1,6 @@
 // @anchor: leaderboard/features/settings/model/settings-storage
 // @intent: Persist settings presets and migrate legacy localStorage keys.
-import type { CarClassRule, SettingsPreset, SettingsPresetsState, SettingsSnapshot } from '@/lib/types'
+import type { CarClassRule, SettingsPreset, SettingsPresetsState, SettingsSnapshot } from '@/shared/types'
 import {
   DEFAULT_CLASS_RULES,
   DEFAULT_PACE_PERCENT_THRESHOLD,
@@ -10,7 +10,7 @@ import {
   MAX_PACE_PERCENT_THRESHOLD,
   MIN_PACE_PERCENT_THRESHOLD,
   SETTINGS_PRESETS_STORAGE_KEY,
-} from '@/lib/constants'
+} from '@/shared/config/constants'
 import { dedupeCarClassRules } from './serialize'
 
 const SETTINGS_PRESETS_VERSION = 1 as const

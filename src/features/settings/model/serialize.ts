@@ -1,6 +1,6 @@
 // @anchor: leaderboard/features/settings/model/serialize
 // @intent: Parse and format settings-specific text representations.
-import type { CarClassRule } from '@/lib/types'
+import type { CarClassRule } from '@/shared/types'
 
 /**
  * Formats car class rules into a multiline textarea string.

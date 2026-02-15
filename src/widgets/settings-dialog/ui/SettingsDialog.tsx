@@ -1,25 +1,24 @@
 // @anchor: leaderboard/widgets/settings-dialog/ui
 // @intent: Lightweight settings dialog for preset selection plus entrypoint to advanced preset management.
-import type { SettingsPreset, SettingsSnapshot } from '@/lib/types'
+import type { SettingsPreset, SettingsSnapshot } from '@/shared/types'
 import { IconSettings } from '@tabler/icons-react'
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { PresetControls, PresetManagementDialog } from '@/features/settings'
+import {
+  DEFAULT_PACE_PERCENT_THRESHOLD,
+  MAX_PACE_PERCENT_THRESHOLD,
+  MIN_PACE_PERCENT_THRESHOLD,
+} from '@/shared/config/constants'
+import { Button } from '@/shared/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { PresetControls } from '@/features/settings/ui/PresetControls'
-import { PresetManagementDialog } from '@/features/settings/ui/PresetManagementDialog'
-import {
-  DEFAULT_PACE_PERCENT_THRESHOLD,
-  MAX_PACE_PERCENT_THRESHOLD,
-  MIN_PACE_PERCENT_THRESHOLD,
-} from '@/lib/constants'
+} from '@/shared/ui/dialog'
+import { Input } from '@/shared/ui/input'
+import { Label } from '@/shared/ui/label'
 
 interface SettingsDialogProps {
   presets: SettingsPreset[]

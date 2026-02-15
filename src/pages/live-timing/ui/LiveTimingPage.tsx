@@ -1,14 +1,16 @@
 // @anchor: leaderboard/pages/live-timing/ui
 // @intent: Live timing page composition wiring settings, data loading, filters and leaderboard rendering.
 import type { ProcessedEntry } from '@/shared/types'
-import { useChampionshipParticipants } from '@/features/championship-participants'
-import { Leaderboard, LeaderboardFilters, useLeaderboardFilters } from '@/features/leaderboard'
-import { useSettingsPresets } from '@/features/settings'
 import { DEFAULT_PACE_PERCENT_THRESHOLD, DEFAULT_REFRESH_INTERVAL } from '@/shared/config/constants'
-import { ErrorState } from '@/shared/ui/ErrorState'
-import { LoadingState } from '@/shared/ui/LoadingState'
-import { SettingsDialog } from '@/widgets/settings-dialog'
+import { useChampionshipParticipants } from '../model/championship-participants/useChampionshipParticipants'
+import { useLeaderboardFilters } from '../model/leaderboard/useLeaderboardFilters'
+import { useSettingsPresets } from '../model/settings/useSettingsPresets'
 import { useLeaderboard } from '../model/useLeaderboard'
+import { Leaderboard } from './leaderboard/Leaderboard'
+import { LeaderboardFilters } from './leaderboard/LeaderboardFilters'
+import { SettingsDialog } from './settings/SettingsDialog'
+import { ErrorState } from './states/ErrorState'
+import { LoadingState } from './states/LoadingState'
 
 const EMPTY_LEADERBOARD_ENTRIES: ProcessedEntry[] = []
 

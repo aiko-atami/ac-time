@@ -1,4 +1,4 @@
-// @anchor: leaderboard/features/class-badge-ui
+// @anchor: leaderboard/pages/live-timing/ui/car-class-badge
 // @intent: Visual badge for displaying entry car class.
 import { Badge } from '@/shared/ui/badge'
 

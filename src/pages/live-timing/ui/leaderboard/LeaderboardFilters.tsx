@@ -1,4 +1,4 @@
-// @anchor: leaderboard/features/filters-ui
+// @anchor: leaderboard/pages/live-timing/ui/leaderboard-filters
 // @intent: Stateless filter controls for class, sorting and registration visibility.
 import { IconArrowDown, IconArrowUp } from '@tabler/icons-react'
 import { Button } from '@/shared/ui/button'

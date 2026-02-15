@@ -1,4 +1,4 @@
-// @anchor: leaderboard/features/settings/ui/settings-form-fields
+// @anchor: leaderboard/pages/live-timing/ui/settings-form-fields
 // @intent: Visual form fields for editable settings snapshot values.
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'

@@ -1,12 +1,12 @@
-// @anchor: leaderboard/features/row-ui
+// @anchor: leaderboard/pages/live-timing/ui/leaderboard-row
 // @intent: Dense desktop row representation of a leaderboard entry.
 import type { ProcessedEntry } from '@/shared/types'
-import { cardPadding } from '@/shared/lib/styles'
 import { formatTime } from '@/shared/lib/utils'
 import { Badge } from '@/shared/ui/badge'
 import { Card } from '@/shared/ui/card'
-import { useLeaderboardEntry } from '../model/useLeaderboardEntry'
+import { getLeaderboardEntryMeta } from '../../model/leaderboard/useLeaderboardEntry'
 import { CarClassBadge } from './CarClassBadge'
+import { cardPadding } from './styles'
 
 interface LeaderboardRowProps {
   entry: ProcessedEntry
@@ -28,7 +28,7 @@ interface LeaderboardRowProps {
  */
 export function LeaderboardRow(props: LeaderboardRowProps) {
   const { entry, position, bestOverallLap, pacePercentThreshold, isRegistered } = props
-  const { percentage, badgeClass, tooltipText } = useLeaderboardEntry(entry, bestOverallLap, pacePercentThreshold)
+  const { percentage, badgeClass, tooltipText } = getLeaderboardEntryMeta(entry, bestOverallLap, pacePercentThreshold)
 
   return (
     <Card className={cardPadding.row}>

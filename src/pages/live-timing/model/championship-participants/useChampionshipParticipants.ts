@@ -1,4 +1,4 @@
-// @anchor: leaderboard/features/championship-participants/model/use-championship-participants
+// @anchor: leaderboard/pages/live-timing/model/championship-participants
 // @intent: Load participants list from configurable CSV URL and match leaderboard entries.
 import type { ProcessedEntry } from '@/shared/types'
 import { useCallback, useEffect, useMemo, useReducer } from 'react'

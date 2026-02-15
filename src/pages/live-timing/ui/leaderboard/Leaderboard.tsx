@@ -1,4 +1,4 @@
-// @anchor: leaderboard/features/list-ui
+// @anchor: leaderboard/pages/live-timing/ui/leaderboard-list
 // @intent: Renders leaderboard entries with mobile card and desktop row layouts.
 import type { ProcessedEntry } from '@/shared/types'
 import { useMemo } from 'react'

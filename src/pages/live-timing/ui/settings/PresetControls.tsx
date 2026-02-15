@@ -1,4 +1,4 @@
-// @anchor: leaderboard/features/settings/ui/preset-controls
+// @anchor: leaderboard/pages/live-timing/ui/preset-controls
 // @intent: Minimal preset controls for quick preset switching from settings dialog.
 import type { SettingsPreset } from '@/shared/types'
 import { Button } from '@/shared/ui/button'

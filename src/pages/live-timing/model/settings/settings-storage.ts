@@ -1,4 +1,4 @@
-// @anchor: leaderboard/features/settings/model/settings-storage
+// @anchor: leaderboard/pages/live-timing/model/settings-storage
 // @intent: Persist settings presets and migrate legacy localStorage keys.
 import type { CarClassRule, SettingsPreset, SettingsPresetsState, SettingsSnapshot } from '@/shared/types'
 import {

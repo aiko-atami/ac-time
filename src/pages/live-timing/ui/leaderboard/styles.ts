@@ -1,3 +1,5 @@
+// @anchor: leaderboard/pages/live-timing/ui/leaderboard-styles
+// @intent: Local style token map for leaderboard card/row rendering.
 /**
  * Shared style constants for consistent UI across components
  */

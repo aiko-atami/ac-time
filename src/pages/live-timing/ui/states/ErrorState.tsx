@@ -1,3 +1,5 @@
+// @anchor: leaderboard/pages/live-timing/ui/error-state
+// @intent: Page-local error placeholder for live timing data failures.
 interface ErrorStateProps {
   message: string
 }

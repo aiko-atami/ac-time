@@ -1,13 +1,13 @@
-// @anchor: leaderboard/features/card-ui
+// @anchor: leaderboard/pages/live-timing/ui/leaderboard-card
 // @intent: Compact mobile card representation of a leaderboard entry.
 import type { ProcessedEntry } from '@/shared/types'
 import { useMemo } from 'react'
-import { cardPadding, sectorBadge } from '@/shared/lib/styles'
 import { formatTime } from '@/shared/lib/utils'
 import { Badge } from '@/shared/ui/badge'
 import { Card } from '@/shared/ui/card'
-import { useLeaderboardEntry } from '../model/useLeaderboardEntry'
+import { getLeaderboardEntryMeta } from '../../model/leaderboard/useLeaderboardEntry'
 import { CarClassBadge } from './CarClassBadge'
+import { cardPadding, sectorBadge } from './styles'
 
 interface LeaderboardCardProps {
   entry: ProcessedEntry
@@ -49,7 +49,7 @@ function toKeyedSplits(splits: Array<number | null>, prefix: 'best' | 'theor'): 
  */
 export function LeaderboardCard(props: LeaderboardCardProps) {
   const { entry, position, bestOverallLap, pacePercentThreshold, isRegistered } = props
-  const { percentage, badgeClass } = useLeaderboardEntry(entry, bestOverallLap, pacePercentThreshold)
+  const { percentage, badgeClass } = getLeaderboardEntryMeta(entry, bestOverallLap, pacePercentThreshold)
   const bestLapSplits = useMemo(() => toKeyedSplits(entry.bestLapSplits, 'best'), [entry.bestLapSplits])
   const theoreticalSplits = useMemo(() => toKeyedSplits(entry.splits, 'theor'), [entry.splits])
   const hasRenderableSplits = bestLapSplits.length > 0 || theoreticalSplits.length > 0

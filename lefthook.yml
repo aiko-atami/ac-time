@@ -2,6 +2,6 @@ pre-commit:
   parallel: true
   commands:
     lint:
-      glob: "*.{js,ts,tsx,jsx,json,yml,yaml,md,html,css}"
+      glob: '*.{js,ts,tsx,jsx,json,yml,yaml,md,html,css}'
       run: npx eslint --fix {staged_files}
       stage_fixed: true

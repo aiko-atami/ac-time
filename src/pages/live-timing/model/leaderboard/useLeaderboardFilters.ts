@@ -1,4 +1,4 @@
-// @anchor: leaderboard/features/leaderboard/model/use-leaderboard-filters
+// @anchor: leaderboard/pages/live-timing/model/leaderboard-filters
 // @intent: Provide client-side class/registration filters and sorting for leaderboard entries.
 import type { ProcessedEntry } from '@/shared/types'
 import { useMemo, useState } from 'react'

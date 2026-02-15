@@ -1,4 +1,4 @@
-// @anchor: leaderboard/features/settings/ui/preset-management-dialog
+// @anchor: leaderboard/pages/live-timing/ui/preset-management-dialog
 // @intent: Dedicated dialog for creating, editing, renaming and deleting settings presets.
 import type { SettingsPreset, SettingsSnapshot } from '@/shared/types'
 import { useMemo, useState } from 'react'
@@ -35,7 +35,7 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { useToast } from '@/shared/ui/toast'
-import { formatCarClasses, parseCarClasses } from '../model/serialize'
+import { formatCarClasses, parseCarClasses } from '../../model/settings/serialize'
 import { SettingsFormFields } from './SettingsFormFields'
 
 interface PresetManagementDialogProps {

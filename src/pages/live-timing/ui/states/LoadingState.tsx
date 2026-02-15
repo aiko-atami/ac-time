@@ -1,3 +1,5 @@
+// @anchor: leaderboard/pages/live-timing/ui/loading-state
+// @intent: Page-local loading placeholder while timing data is being fetched.
 export function LoadingState() {
   return (
     <div className="flex items-center justify-center min-h-screen">

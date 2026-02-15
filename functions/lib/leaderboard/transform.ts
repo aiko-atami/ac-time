@@ -1,11 +1,11 @@
-// @anchor: leaderboard/shared/lib/transform
-// @intent: Transform raw leaderboard API payload into normalized and sorted UI entries.
+// @anchor: leaderboard/functions/lib/transform
+// @intent: Transform raw leaderboard API payload into normalized and sorted entries for API responses.
 import type {
   CarClassRule,
   Driver,
   LeaderboardData,
   ProcessedEntry,
-} from '@/shared/types'
+} from '../../../src/shared/types'
 
 /**
  * Resolves car class by configured car rules.

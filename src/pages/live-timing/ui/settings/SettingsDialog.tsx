@@ -1,9 +1,8 @@
-// @anchor: leaderboard/widgets/settings-dialog/ui
+// @anchor: leaderboard/pages/live-timing/ui/settings-dialog
 // @intent: Lightweight settings dialog for preset selection plus entrypoint to advanced preset management.
 import type { SettingsPreset, SettingsSnapshot } from '@/shared/types'
 import { IconSettings } from '@tabler/icons-react'
 import { useState } from 'react'
-import { PresetControls, PresetManagementDialog } from '@/features/settings'
 import {
   DEFAULT_PACE_PERCENT_THRESHOLD,
   MAX_PACE_PERCENT_THRESHOLD,
@@ -19,6 +18,8 @@ import {
 } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import { PresetControls } from './PresetControls'
+import { PresetManagementDialog } from './PresetManagementDialog'
 
 interface SettingsDialogProps {
   presets: SettingsPreset[]

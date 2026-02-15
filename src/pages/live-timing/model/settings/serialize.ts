@@ -1,4 +1,4 @@
-// @anchor: leaderboard/features/settings/model/serialize
+// @anchor: leaderboard/pages/live-timing/model/settings-serialize
 // @intent: Parse and format settings-specific text representations.
 import type { CarClassRule } from '@/shared/types'
 

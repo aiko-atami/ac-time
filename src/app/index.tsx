@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
-import { ToastProvider } from '../shared/ui/toast.tsx'
+import { ToastProvider } from '@/shared/ui/toast'
 import App from './App.tsx'
 import './styles/index.css'
 

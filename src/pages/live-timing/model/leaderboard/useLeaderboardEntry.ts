@@ -9,7 +9,7 @@ interface UseLeaderboardEntryResult {
   hasSplits: boolean
 }
 
-export function useLeaderboardEntry(
+export function getLeaderboardEntryMeta(
   entry: ProcessedEntry,
   bestOverallLap: number | null,
   pacePercentThreshold: number = DEFAULT_PACE_PERCENT_THRESHOLD,

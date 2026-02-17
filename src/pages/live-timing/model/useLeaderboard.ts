@@ -1,7 +1,15 @@
+// React adapter over Effector leaderboard model for page-level data consumption.
 import type { CarClassRule, ProcessedLeaderboard } from '@/shared/types'
-import { useEffect, useRef, useState } from 'react'
-import { fetchLeaderboard } from '@/shared/api/leaderboard'
+import { useUnit } from 'effector-react'
+import { useEffect } from 'react'
 import { DEFAULT_CLASS_RULES } from '@/shared/config/constants'
+import {
+  $leaderboardData,
+  $leaderboardError,
+  $leaderboardLoading,
+  leaderboardParamsChanged,
+  leaderboardRefetchRequested,
+} from './leaderboard/data.model'
 
 interface UseLeaderboardOptions {
   refreshInterval?: number // Auto-refresh interval in milliseconds
@@ -25,49 +33,43 @@ export function useLeaderboard(
 ): UseLeaderboardReturn {
   const { refreshInterval, serverUrl, classRules = DEFAULT_CLASS_RULES } = options
 
-  const [data, setData] = useState<ProcessedLeaderboard | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
+  const {
+    data,
+    loading,
+    error,
+    setLeaderboardParams,
+    refetchLeaderboard,
+  } = useUnit({
+    data: $leaderboardData,
+    loading: $leaderboardLoading,
+    error: $leaderboardError,
+    setLeaderboardParams: leaderboardParamsChanged,
+    refetchLeaderboard: leaderboardRefetchRequested,
+  })
 
-  // Keep refs to latest values for use in interval callback
-  const serverUrlRef = useRef(serverUrl)
-  const classRulesRef = useRef(classRules)
-  serverUrlRef.current = serverUrl
-  classRulesRef.current = classRules
-
-  // Stable fetch function using refs
-  const loadData = async () => {
-    try {
-      setLoading(true)
-      const result = await fetchLeaderboard(serverUrlRef.current, classRulesRef.current)
-      setData(result)
-      setError(null)
-    }
-    catch (err) {
-      setError(err instanceof Error ? err : new Error('Unknown error'))
-      console.error('Error loading leaderboard:', err)
-    }
-    finally {
-      setLoading(false)
-    }
-  }
-
-  // Serialize classRules for dependency comparison
-  const classRulesKey = JSON.stringify(classRules)
-
-  // Fetch on mount and when serverUrl or classRules change
+  // Sync request params and load data when server/class rules change.
   useEffect(() => {
-    loadData()
-  }, [serverUrl, classRulesKey])
+    setLeaderboardParams({ serverUrl, classRules })
+  }, [serverUrl, classRules, setLeaderboardParams])
 
-  // Auto-refresh interval
+  // Keep periodic refresh behavior for active page session.
   useEffect(() => {
     if (!refreshInterval)
       return
 
-    const interval = setInterval(loadData, refreshInterval)
+    const interval = setInterval(() => {
+      refetchLeaderboard()
+    }, refreshInterval)
     return () => clearInterval(interval)
-  }, [refreshInterval])
+  }, [refreshInterval, refetchLeaderboard])
 
-  return { data, loading, error, refetch: loadData }
+  /**
+   * Reloads leaderboard using last known request params.
+   * @returns Promise resolved when refresh flow completes.
+   */
+  const refetch = async (): Promise<void> => {
+    refetchLeaderboard()
+  }
+
+  return { data, loading, error, refetch }
 }

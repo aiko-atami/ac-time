@@ -1,5 +1,4 @@
-// @anchor: leaderboard/pages/live-timing/model/use-leaderboard-entry
-// @intent: Derive presentational metadata for leaderboard rows and cards.
+// Derives presentational metadata for leaderboard rows and cards.
 import type { ProcessedEntry } from '@/shared/types'
 import { DEFAULT_PACE_PERCENT_THRESHOLD } from '@/shared/config/constants'
 import { formatDeltaTime, formatTime } from '@/shared/lib/utils'
@@ -13,6 +12,14 @@ interface UseLeaderboardEntryResult {
   hasSplits: boolean
 }
 
+/**
+ * Builds derived view-model data for a single leaderboard entry.
+ * Used by UI rows/cards to render pace badge, delta text and sector tooltip consistently.
+ * @param entry Leaderboard entry with lap and split information.
+ * @param bestOverallLap Fastest lap among currently visible entries.
+ * @param pacePercentThreshold Threshold above which pace badge becomes warning/destructive.
+ * @returns Computed metadata consumed by leaderboard presentation components.
+ */
 export function getLeaderboardEntryMeta(
   entry: ProcessedEntry,
   bestOverallLap: number | null,

@@ -1,9 +1,20 @@
-// @anchor: leaderboard/pages/live-timing/model/leaderboard-filters
-// @intent: Provide client-side class/registration filters and sorting for leaderboard entries.
+// Client-side class/registration filters and sorting for leaderboard entries.
+import type { SortField } from './filters.model'
 import type { ProcessedEntry } from '@/shared/types'
-import { useMemo, useState } from 'react'
-
-type SortField = 'lapTime' | 'driver' | 'laps'
+import { useUnit } from 'effector-react'
+import { useEffect, useMemo } from 'react'
+import {
+  $selectedClass,
+  $showRegisteredOnly,
+  $sortAsc,
+  $sortBy,
+  classGroupingAvailabilityChanged,
+  classSelected,
+  registeredOnlySet,
+  sortDirectionSet,
+  sortDirectionToggleClicked,
+  sortFieldSelected,
+} from './filters.model'
 
 interface UseLeaderboardFiltersReturn {
   filtered: ProcessedEntry[]
@@ -20,6 +31,43 @@ interface UseLeaderboardFiltersReturn {
 }
 
 /**
+ * Compares two entries according to selected sort field and direction.
+ * @param left Left entry.
+ * @param right Right entry.
+ * @param sortBy Active sort field.
+ * @param sortAsc Active sort direction.
+ * @returns Numeric compare result compatible with `Array.sort`.
+ */
+function compareEntries(
+  left: ProcessedEntry,
+  right: ProcessedEntry,
+  sortBy: SortField,
+  sortAsc: boolean,
+): number {
+  let comparison = 0
+
+  switch (sortBy) {
+    case 'lapTime':
+      if (left.bestLap === null && right.bestLap === null)
+        comparison = 0
+      else if (left.bestLap === null)
+        comparison = 1
+      else if (right.bestLap === null)
+        comparison = -1
+      else comparison = left.bestLap - right.bestLap
+      break
+    case 'driver':
+      comparison = left.driverName.localeCompare(right.driverName)
+      break
+    case 'laps':
+      comparison = right.lapCount - left.lapCount
+      break
+  }
+
+  return sortAsc ? comparison : -comparison
+}
+
+/**
  * Custom hook for filtering and sorting leaderboard data
  * Handles car class filtering and multi-field sorting
  */
@@ -29,10 +77,33 @@ export function useLeaderboardFilters(
   enableClassGrouping = true,
   enableParticipantsFiltering = true,
 ): UseLeaderboardFiltersReturn {
-  const [selectedClass, setSelectedClass] = useState<string>('All')
-  const [sortBy, setSortBy] = useState<SortField>('lapTime')
-  const [sortAsc, setSortAsc] = useState(true)
-  const [showRegisteredOnly, setShowRegisteredOnly] = useState(false)
+  const {
+    selectedClass,
+    sortBy,
+    sortAsc,
+    showRegisteredOnly,
+    setSelectedClass,
+    setSortBy,
+    setSortAsc,
+    toggleSortDirection,
+    setShowRegisteredOnly,
+    setClassGroupingAvailability,
+  } = useUnit({
+    selectedClass: $selectedClass,
+    sortBy: $sortBy,
+    sortAsc: $sortAsc,
+    showRegisteredOnly: $showRegisteredOnly,
+    setSelectedClass: classSelected,
+    setSortBy: sortFieldSelected,
+    setSortAsc: sortDirectionSet,
+    toggleSortDirection: sortDirectionToggleClicked,
+    setShowRegisteredOnly: registeredOnlySet,
+    setClassGroupingAvailability: classGroupingAvailabilityChanged,
+  })
+
+  useEffect(() => {
+    setClassGroupingAvailability(enableClassGrouping)
+  }, [enableClassGrouping, setClassGroupingAvailability])
 
   // Get unique car classes
   const classes = useMemo(() => {
@@ -61,34 +132,10 @@ export function useLeaderboardFilters(
     }
 
     // Sort
-    result.sort((a, b) => {
-      let comparison = 0
-
-      switch (sortBy) {
-        case 'lapTime':
-          if (a.bestLap === null && b.bestLap === null)
-            comparison = 0
-          else if (a.bestLap === null)
-            comparison = 1
-          else if (b.bestLap === null)
-            comparison = -1
-          else comparison = a.bestLap - b.bestLap
-          break
-        case 'driver':
-          comparison = a.driverName.localeCompare(b.driverName)
-          break
-        case 'laps':
-          comparison = b.lapCount - a.lapCount // Descending by default
-          break
-      }
-
-      return sortAsc ? comparison : -comparison
-    })
+    result.sort((left, right) => compareEntries(left, right, sortBy, sortAsc))
 
     return result
   }, [entries, effectiveSelectedClass, sortBy, sortAsc, showRegisteredOnly, isRegistered, enableClassGrouping, enableParticipantsFiltering])
-
-  const toggleSortDirection = () => setSortAsc(prev => !prev)
 
   return {
     filtered,

@@ -44,13 +44,10 @@
 - Document important fields/properties with short intent comments when non-obvious.
 - Prefer short, factual intent over prose.
 
-## Context Anchors
-- Add a file-level anchor at the top of each file:
-  - Format: `// @anchor: <domain>/<layer>/<feature>` (e.g. `// @anchor: leaderboard/features/use-leaderboard`)
-- Add a short module summary right after the anchor:
-  - Format: `// @intent: <one-line summary>`
-- For complex flows, add inline anchors at key steps:
-  - Format: `// @anchor: <step-name>`
+## Context Comments
+- Add a short plain comment near the top of each file describing the code goal and why the module exists.
+- For complex flows, add short plain comments before non-obvious blocks to explain the purpose of the code below.
+- Do not use special comment tags for this (for example `@anchor` or `@intent`); use normal descriptive comments.
 
 ## Styling and UI
 - Use shadcn/ui components as the base UI system.

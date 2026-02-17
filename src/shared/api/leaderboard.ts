@@ -3,6 +3,22 @@ import { mockLeaderboardData } from '@/shared/api/mock/leaderboard'
 import { normalizeDriverName } from '@/shared/lib/driver-name'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
+const REQUEST_TIMEOUT_MS = 5000
+
+/**
+ * Creates an empty leaderboard response with an error message.
+ * @param message Human-readable failure message.
+ * @returns Processed leaderboard fallback payload.
+ */
+function createErrorResult(message: string): ProcessedLeaderboard {
+  return {
+    leaderboard: [],
+    serverName: '',
+    track: '',
+    sessionName: '',
+    error: message,
+  }
+}
 
 /**
  * Fetch pre-processed leaderboard data from backend API
@@ -19,10 +35,10 @@ export async function fetchLeaderboard(
     return mockLeaderboardData
   }
 
-  try {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 5000)
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort('Request timeout'), REQUEST_TIMEOUT_MS)
 
+  try {
     // Build URL with query params
     let endpoint = `${API_URL}/api/leaderboard`
     const params = new URLSearchParams()
@@ -47,8 +63,6 @@ export async function fetchLeaderboard(
       },
     })
 
-    clearTimeout(timeoutId)
-
     if (!response.ok) {
       throw new Error(`API returned ${response.status}: ${response.statusText}`)
     }
@@ -64,15 +78,14 @@ export async function fetchLeaderboard(
     }
   }
   catch (error) {
-    console.error('Error fetching leaderboard:', error)
-
-    // Return error state with empty leaderboard
-    return {
-      leaderboard: [],
-      serverName: '',
-      track: '',
-      sessionName: '',
-      error: error instanceof Error ? error.message : 'Failed to fetch leaderboard',
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return createErrorResult('Leaderboard request timed out')
     }
+
+    console.error('Error fetching leaderboard:', error)
+    return createErrorResult(error instanceof Error ? error.message : 'Failed to fetch leaderboard')
+  }
+  finally {
+    clearTimeout(timeoutId)
   }
 }

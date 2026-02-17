@@ -18,6 +18,9 @@ const DEFAULT_REQUEST_PARAMS: LeaderboardRequestState = {
   classRules: DEFAULT_CLASS_RULES,
 }
 
+// Module-scoped controller — aborted on each new request to cancel stale responses.
+let activeController: AbortController | null = null
+
 // UI/settings changed request parameters for leaderboard loading.
 export const leaderboardParamsChanged = createEvent<LeaderboardRequestParams>()
 // Trigger a manual/periodic refresh using latest known request params.
@@ -31,9 +34,29 @@ export const $leaderboardRequestParams = createStore<LeaderboardRequestState>(DE
   }))
 
 // Performs API call to load processed leaderboard payload.
+// Aborts any previous in-flight request before starting a new one.
 export const loadLeaderboardFx = createEffect(
-  async (params: LeaderboardRequestState): Promise<ProcessedLeaderboard> =>
-    fetchLeaderboard(params.serverUrl, params.classRules),
+  async (params: LeaderboardRequestState): Promise<ProcessedLeaderboard> => {
+    // Cancel previous in-flight request to prevent stale data overwrite.
+    if (activeController) {
+      activeController.abort()
+    }
+    activeController = new AbortController()
+    const { signal } = activeController
+
+    const result = await fetchLeaderboard({
+      serverUrl: params.serverUrl,
+      classRules: params.classRules,
+      signal,
+    })
+
+    // If this request was aborted while awaiting, discard its result.
+    if (signal.aborted) {
+      throw new DOMException('Request superseded by newer call', 'AbortError')
+    }
+
+    return result
+  },
 )
 
 // Latest successfully loaded leaderboard response.
@@ -41,8 +64,14 @@ export const $leaderboardData = createStore<ProcessedLeaderboard | null>(null)
   .on(loadLeaderboardFx.doneData, (_, payload) => payload)
 
 // Unhandled runtime error from effect boundary (network throws, etc).
+// AbortError from superseded requests is silently ignored.
 export const $leaderboardError = createStore<Error | null>(null)
-  .on(loadLeaderboardFx.failData, (_, error) => error)
+  .on(loadLeaderboardFx.failData, (prev, error) => {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return prev
+    }
+    return error
+  })
   .reset(loadLeaderboardFx.done)
 
 // True while leaderboard loading effect is in progress.

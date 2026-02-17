@@ -18,6 +18,7 @@ import {
 } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import { validatePacePercentThreshold } from '../../model/settings/validate'
 import { PresetControls } from './PresetControls'
 import { PresetManagementDialog } from './PresetManagementDialog'
 
@@ -228,27 +229,4 @@ export function SettingsDialog({
       )}
     </>
   )
-}
-
-/**
- * Validates allowed pace threshold percentage.
- * @param value Raw input string.
- * @returns Validation error text or null.
- */
-function validatePacePercentThreshold(value: string): string | null {
-  const trimmed = value.trim()
-  if (!trimmed) {
-    return 'Threshold is required.'
-  }
-
-  const numeric = Number(trimmed)
-  if (!Number.isFinite(numeric) || !Number.isInteger(numeric)) {
-    return 'Threshold must be an integer.'
-  }
-
-  if (numeric < MIN_PACE_PERCENT_THRESHOLD || numeric > MAX_PACE_PERCENT_THRESHOLD) {
-    return `Threshold must be between ${MIN_PACE_PERCENT_THRESHOLD} and ${MAX_PACE_PERCENT_THRESHOLD}.`
-  }
-
-  return null
 }

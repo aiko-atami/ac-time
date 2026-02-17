@@ -21,7 +21,7 @@ interface UseLeaderboardReturn {
   data: ProcessedLeaderboard | null
   loading: boolean
   error: Error | null
-  refetch: () => Promise<void>
+  refetch: () => void
 }
 
 /**
@@ -65,9 +65,8 @@ export function useLeaderboard(
 
   /**
    * Reloads leaderboard using last known request params.
-   * @returns Promise resolved when refresh flow completes.
    */
-  const refetch = async (): Promise<void> => {
+  const refetch = (): void => {
     refetchLeaderboard()
   }
 

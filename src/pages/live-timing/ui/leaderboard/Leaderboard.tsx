@@ -39,7 +39,7 @@ export function Leaderboard(props: LeaderboardProps) {
   const { entries, pacePercentThreshold, isRegistered } = props
 
   const isDesktop = useMediaQuery('(min-width: 768px)')
-  const bestOverallLap = getBestOverallLap(entries)
+  const bestOverallLap = useMemo(() => getBestOverallLap(entries), [entries])
   const registrationByEntryId = useMemo(() => {
     return new Map(entries.map(entry => [entry.id, isRegistered(entry)]))
   }, [entries, isRegistered])

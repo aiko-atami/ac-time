@@ -20,14 +20,22 @@ function createErrorResult(message: string): ProcessedLeaderboard {
   }
 }
 
+export interface FetchLeaderboardOptions {
+  serverUrl?: string
+  classRules?: CarClassRule[]
+  /** External abort signal for cancelling in-flight requests. */
+  signal?: AbortSignal
+}
+
 /**
- * Fetch pre-processed leaderboard data from backend API
- * In development mode with no API_URL, uses mock data
+ * Fetch pre-processed leaderboard data from backend API.
+ * In development mode with no API_URL, uses mock data.
  */
 export async function fetchLeaderboard(
-  serverUrl?: string,
-  classRules?: CarClassRule[],
+  options: FetchLeaderboardOptions = {},
 ): Promise<ProcessedLeaderboard> {
+  const { serverUrl, classRules, signal: externalSignal } = options
+
   // Use mock data only if explicitly enabled via environment variable
   if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
     // Simulate network delay
@@ -35,10 +43,20 @@ export async function fetchLeaderboard(
     return mockLeaderboardData
   }
 
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort('Request timeout'), REQUEST_TIMEOUT_MS)
+  const timeoutController = new AbortController()
+  const timeoutId = setTimeout(() => timeoutController.abort('Request timeout'), REQUEST_TIMEOUT_MS)
+
+  // Combine external signal with timeout signal via AbortSignal.any when available.
+  const combinedSignal = externalSignal
+    ? AbortSignal.any([externalSignal, timeoutController.signal])
+    : timeoutController.signal
 
   try {
+    // Bail early if already aborted before fetch starts.
+    if (externalSignal?.aborted) {
+      return createErrorResult('Request cancelled')
+    }
+
     // Build URL with query params
     let endpoint = `${API_URL}/api/leaderboard`
     const params = new URLSearchParams()
@@ -57,7 +75,7 @@ export async function fetchLeaderboard(
     }
 
     const response = await fetch(endpoint, {
-      signal: controller.signal,
+      signal: combinedSignal,
       headers: {
         'Content-Type': 'application/json',
       },

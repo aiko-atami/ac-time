@@ -5,15 +5,16 @@ import { useMemo } from 'react'
 import { formatTime } from '@/shared/lib/utils'
 import { Badge } from '@/shared/ui/badge'
 import { Card } from '@/shared/ui/card'
-import { getLeaderboardEntryMeta } from '../../model/leaderboard/useLeaderboardEntry'
 import { CarClassBadge } from './CarClassBadge'
 import { cardPadding, fontSize, sectorBadge, timeMeta } from './styles'
 
 interface LeaderboardCardProps {
   entry: ProcessedEntry
   position: number
-  bestOverallLap: number | null
-  pacePercentThreshold: number
+  percentage: number | null
+  deltaText: string
+  badgeClass: string
+  tooltipText: string
   isRegistered?: boolean
 }
 
@@ -42,20 +43,29 @@ function toKeyedSplits(splits: Array<number | null>, prefix: 'best' | 'theor'): 
  * @param props Component props object.
  * @param props.entry Entry data to render.
  * @param props.position Current visual position.
- * @param props.bestOverallLap Best lap used for pace comparison.
- * @param props.pacePercentThreshold Pace threshold used for badge classes.
+ * @param props.percentage Pace percentage relative to current leader.
+ * @param props.deltaText Formatted delta text relative to current leader.
+ * @param props.badgeClass Badge class based on pace percentage thresholds.
+ * @param props.tooltipText Precomputed sector tooltip text.
  * @param props.isRegistered Whether driver is registered in participants list.
  * @returns Leaderboard entry card.
  */
 export function LeaderboardCard(props: LeaderboardCardProps) {
-  const { entry, position, bestOverallLap, pacePercentThreshold, isRegistered } = props
-  const { percentage, deltaText, badgeClass } = getLeaderboardEntryMeta(entry, bestOverallLap, pacePercentThreshold)
+  const {
+    entry,
+    position,
+    percentage,
+    deltaText,
+    badgeClass,
+    tooltipText,
+    isRegistered,
+  } = props
   const bestLapSplits = useMemo(() => toKeyedSplits(entry.bestLapSplits, 'best'), [entry.bestLapSplits])
   const theoreticalSplits = useMemo(() => toKeyedSplits(entry.splits, 'theor'), [entry.splits])
   const hasRenderableSplits = bestLapSplits.length > 0 || theoreticalSplits.length > 0
 
   return (
-    <Card className={cardPadding.card}>
+    <Card className={cardPadding.card} title={tooltipText}>
       {/* Header */}
       <div className="flex items-center gap-2 mb-2">
         <div className="flex flex-col min-w-0 flex-1">

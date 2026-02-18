@@ -1,8 +1,8 @@
 // @anchor: leaderboard/pages/live-timing/ui/leaderboard-list
 // @intent: Renders leaderboard entries with mobile card and desktop row layouts.
 import type { ProcessedEntry } from '@/shared/types'
-import { useMemo } from 'react'
 import { useMediaQuery } from '@/shared/lib/useMediaQuery'
+import { useLeaderboardView } from '../../model/leaderboard/useLeaderboardView'
 import { LeaderboardCard } from './LeaderboardCard'
 import { LeaderboardRow } from './LeaderboardRow'
 
@@ -10,21 +10,6 @@ interface LeaderboardProps {
   entries: ProcessedEntry[]
   pacePercentThreshold: number
   isRegistered: (entry: ProcessedEntry) => boolean
-}
-
-/**
- * Computes the best valid lap from visible entries.
- * @param entries Leaderboard entries currently rendered.
- * @returns Fastest lap in milliseconds or null.
- */
-function getBestOverallLap(entries: ProcessedEntry[]): number | null {
-  return entries.reduce((min, entry) => {
-    if (entry.bestLap === null)
-      return min
-    if (min === null)
-      return entry.bestLap
-    return entry.bestLap < min ? entry.bestLap : min
-  }, null as number | null)
 }
 
 /**
@@ -39,12 +24,13 @@ export function Leaderboard(props: LeaderboardProps) {
   const { entries, pacePercentThreshold, isRegistered } = props
 
   const isDesktop = useMediaQuery('(min-width: 768px)')
-  const bestOverallLap = useMemo(() => getBestOverallLap(entries), [entries])
-  const registrationByEntryId = useMemo(() => {
-    return new Map(entries.map(entry => [entry.id, isRegistered(entry)]))
-  }, [entries, isRegistered])
+  const viewEntries = useLeaderboardView({
+    entries,
+    isRegistered,
+    pacePercentThreshold,
+  })
 
-  if (entries.length === 0) {
+  if (viewEntries.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -63,14 +49,16 @@ export function Leaderboard(props: LeaderboardProps) {
 
   return (
     <div className={listClassName}>
-      {entries.map((entry, index) => (
+      {viewEntries.map(viewEntry => (
         <EntryComponent
-          key={entry.id}
-          entry={entry}
-          position={index + 1}
-          bestOverallLap={bestOverallLap}
-          pacePercentThreshold={pacePercentThreshold}
-          isRegistered={registrationByEntryId.get(entry.id) ?? false}
+          key={viewEntry.entry.id}
+          entry={viewEntry.entry}
+          position={viewEntry.position}
+          percentage={viewEntry.percentage}
+          deltaText={viewEntry.deltaText}
+          badgeClass={viewEntry.badgeClass}
+          tooltipText={viewEntry.tooltipText}
+          isRegistered={viewEntry.isRegistered}
         />
       ))}
     </div>

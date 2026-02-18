@@ -1,32 +1,26 @@
 // @anchor: leaderboard/pages/live-timing/ui
 // @intent: Live timing page composition wiring settings, data loading, filters and leaderboard rendering.
-import type { ProcessedEntry, ProcessedLeaderboard, SettingsSnapshot } from '@/shared/types'
-import { useMemo } from 'react'
-import { DEFAULT_PACE_PERCENT_THRESHOLD, DEFAULT_REFRESH_INTERVAL } from '@/shared/config/constants'
-import { useChampionshipParticipants } from '../model/championship-participants/useChampionshipParticipants'
-import { useLeaderboardFilters } from '../model/leaderboard/useLeaderboardFilters'
-import { useSettingsPresets } from '../model/settings/useSettingsPresets'
-import { useLeaderboard } from '../model/useLeaderboard'
+import type { ProcessedEntry, ProcessedLeaderboard } from '@/shared/types'
+import { Link } from '@argon-router/react'
+import { IconSettings } from '@tabler/icons-react'
+import { routes } from '@/shared/routing'
+import { buttonVariants } from '@/shared/ui/button-variants'
+import { useLiveTimingPageModel } from '../model/useLiveTimingPageModel'
 import { Leaderboard } from './leaderboard/Leaderboard'
 import { LeaderboardFilters } from './leaderboard/LeaderboardFilters'
-import { SettingsDialog } from './settings/SettingsDialog'
 import { ErrorState } from './states/ErrorState'
 import { LoadingState } from './states/LoadingState'
-
-const EMPTY_LEADERBOARD_ENTRIES: ProcessedEntry[] = []
 
 // --- Sub-components ---
 
 interface LiveTimingHeaderProps {
   data: ProcessedLeaderboard | null
-  presets: ReturnType<typeof useSettingsPresets>
-  activeSettings: SettingsSnapshot | null
 }
 
 /**
  * Renders page header with server info, session metadata and settings trigger.
  */
-function LiveTimingHeader({ data, presets, activeSettings }: LiveTimingHeaderProps) {
+function LiveTimingHeader({ data }: LiveTimingHeaderProps) {
   return (
     <header className="mb-4 sm:mb-5">
       <div className="flex items-start justify-between gap-2">
@@ -53,16 +47,14 @@ function LiveTimingHeader({ data, presets, activeSettings }: LiveTimingHeaderPro
           </div>
         </div>
 
-        <SettingsDialog
-          presets={presets.presets}
-          activePresetId={presets.activePresetId}
-          activeSettings={activeSettings}
-          onSelectPreset={presets.selectPreset}
-          onCreatePreset={presets.createNewPreset}
-          onRenamePreset={presets.renamePresetById}
-          onDeletePreset={presets.deletePresetById}
-          onSavePreset={presets.savePresetSettingsById}
-        />
+        <Link
+          to={routes.settings}
+          title="Settings"
+          aria-label="Settings"
+          className={buttonVariants({ variant: 'ghost', size: 'icon' })}
+        >
+          <IconSettings className="h-5 w-5" />
+        </Link>
       </div>
 
       {data?.lastUpdate && (
@@ -173,29 +165,10 @@ function LiveTimingContent(props: LiveTimingContentProps) {
  * @returns Live timing page layout.
  */
 export function LiveTimingPage() {
-  const presets = useSettingsPresets()
-
-  const activeSettings = presets.activePreset?.settings ?? null
-  const enableClassGrouping = (activeSettings?.carClasses.length ?? 0) > 0
-  const enableParticipantsFiltering = Boolean(activeSettings?.participants.csvUrl.trim())
-
-  const { isRegistered } = useChampionshipParticipants({
-    participantsCsvUrl: activeSettings?.participants.csvUrl,
-    matchByDriverNameOnly: !enableClassGrouping,
-  })
-
-  const classRules = useMemo(
-    () => activeSettings?.carClasses,
-    [activeSettings?.carClasses],
-  )
-
-  const { data, loading, error } = useLeaderboard({
-    serverUrl: activeSettings?.serverUrl,
-    refreshInterval: DEFAULT_REFRESH_INTERVAL,
-    classRules,
-  })
-
   const {
+    data,
+    loading,
+    error,
     filtered,
     classes,
     selectedClass,
@@ -206,20 +179,15 @@ export function LiveTimingPage() {
     toggleSortDirection,
     showRegisteredOnly,
     setShowRegisteredOnly,
-  } = useLeaderboardFilters(
-    data?.leaderboard ?? EMPTY_LEADERBOARD_ENTRIES,
+    pacePercentThreshold,
     isRegistered,
-    enableClassGrouping,
-    enableParticipantsFiltering,
-  )
+  } = useLiveTimingPageModel()
 
   return (
     <div className="min-h-screen relative">
       <div className="container mx-auto px-3 py-4 sm:py-5 max-w-4xl md:max-w-6xl lg:max-w-7xl">
         <LiveTimingHeader
           data={data}
-          presets={presets}
-          activeSettings={activeSettings}
         />
         <LiveTimingContent
           data={data}
@@ -235,7 +203,7 @@ export function LiveTimingPage() {
           toggleSortDirection={toggleSortDirection}
           showRegisteredOnly={showRegisteredOnly}
           setShowRegisteredOnly={setShowRegisteredOnly}
-          pacePercentThreshold={activeSettings?.pacePercentThreshold ?? DEFAULT_PACE_PERCENT_THRESHOLD}
+          pacePercentThreshold={pacePercentThreshold}
           isRegistered={isRegistered}
         />
       </div>

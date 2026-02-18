@@ -4,15 +4,16 @@ import type { ProcessedEntry } from '@/shared/types'
 import { formatTime } from '@/shared/lib/utils'
 import { Badge } from '@/shared/ui/badge'
 import { Card } from '@/shared/ui/card'
-import { getLeaderboardEntryMeta } from '../../model/leaderboard/useLeaderboardEntry'
 import { CarClassBadge } from './CarClassBadge'
 import { cardPadding, fontSize, timeMeta } from './styles'
 
 interface LeaderboardRowProps {
   entry: ProcessedEntry
   position: number
-  bestOverallLap: number | null
-  pacePercentThreshold: number
+  percentage: number | null
+  deltaText: string
+  badgeClass: string
+  tooltipText: string
   isRegistered?: boolean
 }
 
@@ -21,14 +22,23 @@ interface LeaderboardRowProps {
  * @param props Component props object.
  * @param props.entry Entry data to render.
  * @param props.position Current visual position.
- * @param props.bestOverallLap Best lap used for pace comparison.
- * @param props.pacePercentThreshold Pace threshold used for badge classes.
+ * @param props.percentage Pace percentage relative to current leader.
+ * @param props.deltaText Formatted delta text relative to current leader.
+ * @param props.badgeClass Badge class based on pace percentage thresholds.
+ * @param props.tooltipText Precomputed sector tooltip text.
  * @param props.isRegistered Whether driver is registered in participants list.
  * @returns Leaderboard entry row.
  */
 export function LeaderboardRow(props: LeaderboardRowProps) {
-  const { entry, position, bestOverallLap, pacePercentThreshold, isRegistered } = props
-  const { percentage, deltaText, badgeClass, tooltipText } = getLeaderboardEntryMeta(entry, bestOverallLap, pacePercentThreshold)
+  const {
+    entry,
+    position,
+    percentage,
+    deltaText,
+    badgeClass,
+    tooltipText,
+    isRegistered,
+  } = props
 
   return (
     <Card className={cardPadding.row}>

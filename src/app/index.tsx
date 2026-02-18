@@ -1,14 +1,19 @@
+import { Provider } from 'effector-react'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-
-import { ToastProvider } from '@/shared/ui/toast'
-import App from './App.tsx'
+import { App } from './App.tsx'
+import { appScope, bootstrapApp } from './bootstrap'
 import './styles/index.css'
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <ToastProvider>
-      <App />
-    </ToastProvider>
-  </StrictMode>,
-)
+async function main() {
+  await bootstrapApp(appScope)
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <Provider value={appScope}>
+        <App />
+      </Provider>
+    </StrictMode>,
+  )
+}
+
+void main()

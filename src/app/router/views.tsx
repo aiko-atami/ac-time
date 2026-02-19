@@ -1,4 +1,4 @@
-// Route-to-page view mapping rendered by a single root routes view.
+// Route-to-page view mapping. Only React component exports — required for Fast Refresh.
 import { createRoutesView, createRouteView, Link } from '@argon-router/react'
 import { LiveTimingPage } from '@/pages/live-timing'
 import { SettingsPage } from '@/pages/settings'

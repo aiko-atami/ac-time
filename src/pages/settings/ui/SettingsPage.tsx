@@ -1,4 +1,4 @@
-// Settings page for creating and editing live timing presets stored in localStorage.
+// Settings page with active preset selection, global threshold and presets list management.
 import type { SettingsPreset, SettingsSnapshot } from '@/shared/types'
 import { Link } from '@argon-router/react'
 import { useMemo, useState } from 'react'
@@ -7,11 +7,10 @@ import {
   parseCarClasses,
   useSettingsPresets,
   validateOptionalHttpUrl,
-  validatePacePercentThreshold,
   validateRequiredHttpUrl,
 } from '@/features/settings-presets'
+import { useSettingsThreshold } from '@/features/settings-threshold'
 import {
-  DEFAULT_PACE_PERCENT_THRESHOLD,
   MAX_PACE_PERCENT_THRESHOLD,
   MIN_PACE_PERCENT_THRESHOLD,
 } from '@/shared/config/constants'
@@ -28,7 +27,14 @@ import {
 } from '@/shared/ui/alert-dialog'
 import { Button } from '@/shared/ui/button'
 import { buttonVariants } from '@/shared/ui/button-variants'
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/shared/ui/card'
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import {
@@ -47,128 +53,146 @@ const EMPTY_SETTINGS: SettingsSnapshot = {
   participants: {
     csvUrl: '',
   },
-  pacePercentThreshold: DEFAULT_PACE_PERCENT_THRESHOLD,
+}
+
+type PresetDialogMode = 'create' | 'edit'
+
+interface PresetDraft {
+  name: string
+  serverUrl: string
+  participantsCsvUrl: string
+  classesCsv: string
 }
 
 /**
- * Renders settings page with full preset management form.
- * @returns Settings page.
+ * Renders settings page with presets list and global threshold controls.
+ * @returns Settings page component.
  */
 export function SettingsPage() {
   const { success } = useToast()
   const presets = useSettingsPresets()
-  const activeSettings = presets.activePreset?.settings ?? null
-  const initialSettings = activeSettings ?? EMPTY_SETTINGS
-  const initialPresetName = presets.activePreset?.name ?? 'Preset'
+  const threshold = useSettingsThreshold()
 
-  const [managedPresetId, setManagedPresetId] = useState<string | null>(() => presets.activePresetId)
-  const [serverUrl, setServerUrl] = useState(() => initialSettings.serverUrl)
-  const [participantsCsvUrl, setParticipantsCsvUrl] = useState(() => initialSettings.participants.csvUrl)
-  const [classesCsv, setClassesCsv] = useState(() => formatCarClasses(initialSettings.carClasses))
-  const [pacePercentThreshold, setPacePercentThreshold] = useState(() => initialSettings.pacePercentThreshold.toString())
-  const [presetName, setPresetName] = useState(() => initialPresetName)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [presetDialogOpen, setPresetDialogOpen] = useState(false)
+  const [presetDialogMode, setPresetDialogMode] = useState<PresetDialogMode>('edit')
+  const [editingPresetId, setEditingPresetId] = useState<string | null>(null)
+  const [deletePresetId, setDeletePresetId] = useState<string | null>(null)
+  const [presetDraft, setPresetDraft] = useState<PresetDraft>(() => {
+    const activeSettings = presets.activePreset?.settings ?? EMPTY_SETTINGS
+    return {
+      name: presets.activePreset?.name ?? 'Preset',
+      serverUrl: activeSettings.serverUrl,
+      participantsCsvUrl: activeSettings.participants.csvUrl,
+      classesCsv: formatCarClasses(activeSettings.carClasses),
+    }
+  })
 
-  const serverUrlError = validateRequiredHttpUrl(serverUrl)
-  const participantsCsvUrlError = validateOptionalHttpUrl(participantsCsvUrl)
-  const pacePercentThresholdError = validatePacePercentThreshold(pacePercentThreshold)
+  const serverUrlError = validateRequiredHttpUrl(presetDraft.serverUrl)
+  const participantsCsvUrlError = validateOptionalHttpUrl(presetDraft.participantsCsvUrl)
   const presetNameError = validatePresetName({
-    value: presetName,
+    value: presetDraft.name,
     presets: presets.presets,
-    activePresetId: managedPresetId,
-    mode: 'save',
+    mode: presetDialogMode,
+    editedPresetId: editingPresetId,
   })
-  const createPresetNameError = validatePresetName({
-    value: presetName,
-    presets: presets.presets,
-    mode: 'create',
-  })
-  const classesHints = buildCarClassesHints(classesCsv)
+  const classesHints = buildCarClassesHints(presetDraft.classesCsv)
 
-  const canPersist = Boolean(managedPresetId)
-    && !serverUrlError
-    && !participantsCsvUrlError
-    && !pacePercentThresholdError
-    && !presetNameError
-  const canCreate = !serverUrlError
-    && !participantsCsvUrlError
-    && !pacePercentThresholdError
-    && !createPresetNameError
+  const canSavePreset = !serverUrlError && !participantsCsvUrlError && !presetNameError
+    && (presetDialogMode === 'create' || Boolean(editingPresetId))
 
   /**
-   * Resolves active preset display name from current list.
-   * @returns Selected preset label.
+   * Opens create preset dialog using active preset settings as a starting point.
    */
-  const managedPresetName = useMemo(() => {
-    return presets.presets.find(preset => preset.id === managedPresetId)?.name ?? 'Preset'
-  }, [presets.presets, managedPresetId])
-
-  /**
-   * Applies settings snapshot values into local draft form controls.
-   * @param settings Snapshot source.
-   */
-  const applySnapshotToDraft = (settings: SettingsSnapshot | null) => {
-    const safeSettings = settings ?? EMPTY_SETTINGS
-    setServerUrl(safeSettings.serverUrl)
-    setParticipantsCsvUrl(safeSettings.participants.csvUrl)
-    setClassesCsv(formatCarClasses(safeSettings.carClasses))
-    setPacePercentThreshold(safeSettings.pacePercentThreshold.toString())
+  const openCreateDialog = () => {
+    const sourceSettings = presets.activePreset?.settings ?? EMPTY_SETTINGS
+    setPresetDialogMode('create')
+    setEditingPresetId(null)
+    setPresetDraft({
+      name: buildNewPresetName(presets.presets),
+      serverUrl: sourceSettings.serverUrl,
+      participantsCsvUrl: sourceSettings.participants.csvUrl,
+      classesCsv: formatCarClasses(sourceSettings.carClasses),
+    })
+    setPresetDialogOpen(true)
   }
 
   /**
-   * Selects preset for editing and loads it into draft state.
-   * @param presetId Target preset id.
+   * Opens edit dialog for a specific preset.
+   * @param preset Preset to edit.
    */
-  const handleSelectPreset = (presetId: string) => {
-    setManagedPresetId(presetId)
-    const selectedPreset = presets.presets.find(preset => preset.id === presetId)
-    applySnapshotToDraft(selectedPreset?.settings ?? null)
-    setPresetName(selectedPreset?.name ?? 'Preset')
+  const openEditDialog = (preset: SettingsPreset) => {
+    setPresetDialogMode('edit')
+    setEditingPresetId(preset.id)
+    setPresetDraft({
+      name: preset.name,
+      serverUrl: preset.settings.serverUrl,
+      participantsCsvUrl: preset.settings.participants.csvUrl,
+      classesCsv: formatCarClasses(preset.settings.carClasses),
+    })
+    setPresetDialogOpen(true)
   }
 
   /**
-   * Saves current draft into selected preset.
+   * Persists current dialog draft into create/edit operation.
    */
   const handleSavePreset = () => {
-    if (!canPersist || !managedPresetId) {
+    if (!canSavePreset) {
       return
     }
 
-    const nextSnapshot = buildDraftSnapshot(serverUrl, participantsCsvUrl, classesCsv, pacePercentThreshold)
-    presets.renamePresetById(managedPresetId, presetName)
-    presets.savePresetSettingsById(managedPresetId, nextSnapshot)
-    presets.selectPreset(managedPresetId)
-    success('Preset saved.')
-  }
+    const nextSnapshot = buildDraftSnapshot(
+      presetDraft.serverUrl,
+      presetDraft.participantsCsvUrl,
+      presetDraft.classesCsv,
+    )
 
-  /**
-   * Creates a new preset from current draft.
-   */
-  const handleCreatePreset = () => {
-    if (!canCreate) {
-      return
+    if (presetDialogMode === 'create') {
+      presets.createNewPreset(nextSnapshot, presetDraft.name)
+      success('Preset created.')
+    }
+    else if (editingPresetId) {
+      presets.updatePresetById(editingPresetId, nextSnapshot, presetDraft.name)
+      success('Preset saved.')
     }
 
-    const nextSnapshot = buildDraftSnapshot(serverUrl, participantsCsvUrl, classesCsv, pacePercentThreshold)
-    presets.createNewPreset(nextSnapshot, presetName)
-    success('Preset created.')
+    setPresetDialogOpen(false)
   }
 
   /**
-   * Deletes current preset and focuses next available preset.
+   * Executes delete for the selected preset id.
    */
   const handleDeletePreset = () => {
-    if (!managedPresetId) {
+    if (!deletePresetId) {
       return
     }
 
-    const nextPresetAfterDelete = presets.presets.find(preset => preset.id !== managedPresetId) ?? null
-    setDeleteDialogOpen(false)
-    presets.deletePresetById(managedPresetId)
-    setManagedPresetId(nextPresetAfterDelete?.id ?? null)
-    applySnapshotToDraft(nextPresetAfterDelete?.settings ?? null)
-    setPresetName(nextPresetAfterDelete?.name ?? 'Preset')
+    presets.deletePresetById(deletePresetId)
+    setDeletePresetId(null)
+    success('Preset deleted.')
   }
+
+  /**
+   * Runs clone operation for the target preset.
+   * @param presetId Preset id to clone.
+   */
+  const handleClonePreset = (presetId: string) => {
+    presets.clonePresetById(presetId)
+    success('Preset cloned.')
+  }
+
+  /**
+   * Resolves selected preset name for delete confirmation.
+   * @returns Selected preset name.
+   */
+  const deletePresetName = useMemo(() => {
+    if (!deletePresetId) {
+      return ''
+    }
+    return presets.presets.find(preset => preset.id === deletePresetId)?.name ?? ''
+  }, [deletePresetId, presets.presets])
+  const activePresetName = useMemo(() => {
+    return presets.presets.find(preset => preset.id === presets.activePresetId)?.name ?? 'Select preset'
+  }, [presets.activePresetId, presets.presets])
 
   return (
     <div className="min-h-screen relative">
@@ -176,100 +200,151 @@ export function SettingsPage() {
         <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="text-2xl font-bold sm:text-3xl">Settings</h1>
-            <p className="text-sm text-muted-foreground">Manage live timing presets saved in local storage.</p>
           </div>
           <Link to={routes.liveTiming} className={buttonVariants({ variant: 'outline' })}>
-            Back to Live Timing
+            Back
           </Link>
         </header>
 
-        <Card size="default" className="gap-0">
-          <CardHeader>
-            <CardTitle>Preset Management</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label id="preset-select-label">Select preset to edit</Label>
-              <Select value={managedPresetId ?? undefined} onValueChange={value => value && handleSelectPreset(value)}>
-                <SelectTrigger aria-labelledby="preset-select-label" className="w-full">
-                  <SelectValue placeholder="Select preset">
-                    {managedPresetName}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {presets.presets.map(preset => (
-                    <SelectItem key={preset.id} value={preset.id}>
-                      {preset.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="grid gap-4">
+          <Card size="default" className="gap-0">
+            <CardHeader>
+              <CardTitle>Main options</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label id="preset-select-label">Select active preset</Label>
+                <Select
+                  value={presets.activePresetId ?? undefined}
+                  onValueChange={value => value && presets.selectPreset(value)}
+                >
+                  <SelectTrigger aria-labelledby="preset-select-label" className="w-full">
+                    <SelectValue placeholder="Select preset">
+                      {activePresetName}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {presets.presets.map(preset => (
+                      <SelectItem key={preset.id} value={preset.id}>
+                        {preset.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="grid gap-1.5">
-              <Label htmlFor="preset-name">Preset Name</Label>
-              <Input
-                id="preset-name"
-                name="presetName"
-                autoComplete="off"
-                value={presetName}
-                onChange={event => setPresetName(event.target.value)}
-                placeholder="Preset name"
-                aria-invalid={Boolean(presetNameError)}
-                aria-describedby={presetNameError ? 'preset-name-error' : undefined}
-              />
-              {presetNameError && (
-                <p id="preset-name-error" className="text-xs text-destructive" aria-live="polite">
-                  {presetNameError}
-                </p>
-              )}
-            </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="pace-percent-threshold">Threshold (%)</Label>
+                <Input
+                  id="pace-percent-threshold"
+                  name="pacePercentThreshold"
+                  type="number"
+                  inputMode="numeric"
+                  min={MIN_PACE_PERCENT_THRESHOLD}
+                  max={MAX_PACE_PERCENT_THRESHOLD}
+                  step={1}
+                  value={threshold.pacePercentThresholdInput}
+                  onChange={event => threshold.setPacePercentThresholdInput(event.target.value)}
+                  onBlur={threshold.commitPacePercentThreshold}
+                  aria-invalid={Boolean(threshold.pacePercentThresholdError)}
+                  aria-describedby={threshold.pacePercentThresholdError ? 'pace-percent-threshold-error' : 'pace-percent-threshold-help'}
+                />
+                {threshold.pacePercentThresholdError && (
+                  <p id="pace-percent-threshold-error" className="text-xs text-destructive" aria-live="polite">
+                    {threshold.pacePercentThresholdError}
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-            <SettingsFormFields
-              serverUrl={serverUrl}
-              participantsCsvUrl={participantsCsvUrl}
-              classesText={classesCsv}
-              serverUrlError={serverUrlError ?? undefined}
-              participantsCsvUrlError={participantsCsvUrlError ?? undefined}
-              pacePercentThreshold={pacePercentThreshold}
-              pacePercentThresholdError={pacePercentThresholdError ?? undefined}
-              pacePercentThresholdMin={MIN_PACE_PERCENT_THRESHOLD}
-              pacePercentThresholdMax={MAX_PACE_PERCENT_THRESHOLD}
-              classesHints={classesHints}
-              onServerUrlChange={setServerUrl}
-              onParticipantsCsvUrlChange={setParticipantsCsvUrl}
-              onClassesTextChange={setClassesCsv}
-              onPacePercentThresholdChange={setPacePercentThreshold}
-            />
-          </CardContent>
-          <CardFooter className="justify-between gap-2 border-t-0 bg-transparent pt-0">
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => setDeleteDialogOpen(true)}
-              disabled={presets.presets.length <= 1 || !managedPresetId}
-            >
-              Delete Preset
-            </Button>
-            <div className="flex flex-wrap justify-end gap-2">
-              <Button type="button" variant="outline" onClick={handleSavePreset} disabled={!canPersist}>
-                Save Preset
-              </Button>
-              <Button type="button" onClick={handleCreatePreset} disabled={!canCreate}>
-                Create New
-              </Button>
-            </div>
-          </CardFooter>
-        </Card>
+          <Card size="default" className="gap-0">
+            <CardHeader>
+              <CardTitle>Presets management</CardTitle>
+              <CardAction>
+                <Button type="button" size="sm" onClick={openCreateDialog}>Add Preset</Button>
+              </CardAction>
+            </CardHeader>
+            <CardContent className="grid gap-2 py-4">
+              {presets.presets.map(preset => (
+                <div key={preset.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3">
+                  <p className="font-medium">{preset.name}</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" size="sm" variant="outline" onClick={() => openEditDialog(preset)}>
+                      Edit
+                    </Button>
+                    <Button type="button" size="sm" variant="outline" onClick={() => handleClonePreset(preset.id)}>
+                      Clone
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => setDeletePresetId(preset.id)}
+                      disabled={presets.presets.length <= 1}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <Dialog open={presetDialogOpen} onOpenChange={setPresetDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{presetDialogMode === 'create' ? 'Create preset' : 'Edit preset'}</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid gap-1.5">
+            <Label htmlFor="preset-name">Preset Name</Label>
+            <Input
+              id="preset-name"
+              name="presetName"
+              autoComplete="off"
+              value={presetDraft.name}
+              onChange={event => setPresetDraft(current => ({ ...current, name: event.target.value }))}
+              placeholder="Preset name"
+              aria-invalid={Boolean(presetNameError)}
+              aria-describedby={presetNameError ? 'preset-name-error' : undefined}
+            />
+            {presetNameError && (
+              <p id="preset-name-error" className="text-xs text-destructive" aria-live="polite">
+                {presetNameError}
+              </p>
+            )}
+          </div>
+
+          <SettingsFormFields
+            serverUrl={presetDraft.serverUrl}
+            participantsCsvUrl={presetDraft.participantsCsvUrl}
+            classesText={presetDraft.classesCsv}
+            serverUrlError={serverUrlError ?? undefined}
+            participantsCsvUrlError={participantsCsvUrlError ?? undefined}
+            classesHints={classesHints}
+            onServerUrlChange={value => setPresetDraft(current => ({ ...current, serverUrl: value }))}
+            onParticipantsCsvUrlChange={value => setPresetDraft(current => ({ ...current, participantsCsvUrl: value }))}
+            onClassesTextChange={value => setPresetDraft(current => ({ ...current, classesCsv: value }))}
+          />
+
+          <DialogFooter>
+            <Button type="button" onClick={handleSavePreset} disabled={!canSavePreset}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={Boolean(deletePresetId)} onOpenChange={open => !open && setDeletePresetId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete preset?</AlertDialogTitle>
             <AlertDialogDescription>
               Preset "
-              {managedPresetName}
+              {deletePresetName}
               " will be removed permanently.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -292,8 +367,8 @@ export function SettingsPage() {
 interface ValidatePresetNameParams {
   value: string
   presets: SettingsPreset[]
-  activePresetId?: string | null
-  mode: 'create' | 'save'
+  mode: PresetDialogMode
+  editedPresetId: string | null
 }
 
 /**
@@ -301,15 +376,15 @@ interface ValidatePresetNameParams {
  * @param params Validation params.
  * @param params.value Current name input.
  * @param params.presets Existing presets list.
- * @param params.activePresetId Selected preset id in save mode.
- * @param params.mode Validation context.
+ * @param params.mode Dialog mode.
+ * @param params.editedPresetId Current edited preset id.
  * @returns Error text or null.
  */
 function validatePresetName({
   value,
   presets,
-  activePresetId,
   mode,
+  editedPresetId,
 }: ValidatePresetNameParams): string | null {
   const normalized = value.trim()
   if (!normalized) {
@@ -318,9 +393,10 @@ function validatePresetName({
 
   const normalizedLower = normalized.toLowerCase()
   const duplicate = presets.find((preset) => {
-    if (mode === 'save' && preset.id === activePresetId) {
+    if (mode === 'edit' && preset.id === editedPresetId) {
       return false
     }
+
     return preset.name.trim().toLowerCase() === normalizedLower
   })
 
@@ -329,6 +405,28 @@ function validatePresetName({
   }
 
   return null
+}
+
+/**
+ * Generates default unique name for create flow.
+ * @param presets Existing presets list.
+ * @returns Name value for create draft.
+ */
+function buildNewPresetName(presets: SettingsPreset[]): string {
+  let index = presets.length + 1
+  const normalizedNames = new Set(
+    presets.map(preset => preset.name.trim().toLowerCase()),
+  )
+
+  while (index < Number.MAX_SAFE_INTEGER) {
+    const candidate = `Preset ${index}`
+    if (!normalizedNames.has(candidate.toLowerCase())) {
+      return candidate
+    }
+    index += 1
+  }
+
+  return `Preset ${Date.now()}`
 }
 
 /**
@@ -392,18 +490,16 @@ function buildCarClassesHints(classesCsv: string): string[] {
 }
 
 /**
- * Creates a normalized settings snapshot from current draft fields.
+ * Creates normalized settings snapshot from current draft fields.
  * @param serverUrl Draft server URL.
  * @param participantsCsvUrl Draft participants CSV URL.
  * @param classesCsv Draft car class rules text.
- * @param pacePercentThreshold Draft pace threshold.
- * @returns Normalized snapshot for storage.
+ * @returns Snapshot for storage.
  */
 function buildDraftSnapshot(
   serverUrl: string,
   participantsCsvUrl: string,
   classesCsv: string,
-  pacePercentThreshold: string,
 ): SettingsSnapshot {
   return {
     serverUrl: serverUrl.trim(),
@@ -411,6 +507,5 @@ function buildDraftSnapshot(
       csvUrl: participantsCsvUrl.trim(),
     },
     carClasses: parseCarClasses(classesCsv),
-    pacePercentThreshold: Number.parseInt(pacePercentThreshold, 10),
   }
 }

@@ -1,7 +1,10 @@
 // Application shell that mounts argon-router provider and route views.
 import { RouterProvider } from '@argon-router/react'
+import { Provider } from 'effector-react'
 import { ToastProvider } from '@/shared/ui/toast'
-import { router, RoutesView } from './router'
+import { appScope } from './lib/bootstrap'
+import { router } from './router'
+import { RoutesView } from './router/views'
 
 /**
  * Root app component.
@@ -9,10 +12,12 @@ import { router, RoutesView } from './router'
  */
 export function App() {
   return (
-    <ToastProvider>
-      <RouterProvider router={router}>
-        <RoutesView />
-      </RouterProvider>
-    </ToastProvider>
+    <Provider value={appScope}>
+      <ToastProvider>
+        <RouterProvider router={router}>
+          <RoutesView />
+        </RouterProvider>
+      </ToastProvider>
+    </Provider>
   )
 }

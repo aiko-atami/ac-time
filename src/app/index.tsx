@@ -1,17 +1,14 @@
-import { Provider } from 'effector-react'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from './App.tsx'
-import { appScope, bootstrapApp } from './bootstrap'
+import { bootstrapApp } from './lib/bootstrap'
 import './styles/index.css'
 
 async function main() {
-  await bootstrapApp(appScope)
+  await bootstrapApp()
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
-      <Provider value={appScope}>
-        <App />
-      </Provider>
+      <App />
     </StrictMode>,
   )
 }

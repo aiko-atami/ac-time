@@ -1,104 +1,61 @@
-// @anchor: leaderboard/pages/live-timing/model/settings-presets
-// @intent: React hook that exposes preset CRUD and active settings state.
+// React facade for settings presets Effector model.
 import type { SettingsPreset, SettingsSnapshot } from '@/shared/types'
-import { useMemo, useState } from 'react'
+import { useUnit } from 'effector-react'
 import {
-  createPreset,
-  deletePreset,
-  getActivePreset,
-  loadSettingsPresetsState,
-  renamePreset,
-  saveSettingsPresetsState,
-  selectActivePreset,
-  updatePresetSettings,
-} from './settings-storage'
+  $activePreset,
+  $activePresetId,
+  $presets,
+  presetCloned,
+  presetCreated,
+  presetDeleted,
+  presetSelected,
+  presetUpdated,
+} from './presets.model'
 
 interface UseSettingsPresetsReturn {
   presets: SettingsPreset[]
   activePresetId: string | null
   activePreset: SettingsPreset | null
   selectPreset: (presetId: string) => void
-  createNewPreset: (settings: SettingsSnapshot, name?: string) => void
-  renamePresetById: (presetId: string, name: string) => void
+  createNewPreset: (settings: SettingsSnapshot, name: string) => void
+  updatePresetById: (presetId: string, settings: SettingsSnapshot, name: string) => void
   deletePresetById: (presetId: string) => void
-  savePresetSettingsById: (presetId: string, settings: SettingsSnapshot) => void
+  clonePresetById: (presetId: string) => void
 }
 
 /**
- * Manages settings presets with localStorage persistence.
- * @returns Preset state and mutation callbacks.
+ * Exposes presets state and domain actions for React components.
+ * @returns Presets store slice and handlers.
  */
 export function useSettingsPresets(): UseSettingsPresetsReturn {
-  const [state, setState] = useState(loadSettingsPresetsState)
-
-  /**
-   * Commits state update and persists it in localStorage.
-   * @param updater State updater function.
-   */
-  const commitState = (updater: (current: ReturnType<typeof loadSettingsPresetsState>) => ReturnType<typeof loadSettingsPresetsState>) => {
-    setState((current) => {
-      const next = updater(current)
-      saveSettingsPresetsState(next)
-      return next
-    })
-  }
-
-  /**
-   * Selects active preset.
-   * @param presetId Target preset id.
-   */
-  const selectPreset = (presetId: string) => {
-    commitState(current => selectActivePreset(current, presetId))
-  }
-
-  /**
-   * Creates a new preset and activates it.
-   * @param settings Snapshot for the new preset.
-   * @param name Optional preset name.
-   */
-  const createNewPreset = (settings: SettingsSnapshot, name = '') => {
-    commitState((current) => {
-      const resolvedName = name.trim() || `Preset ${current.presets.length + 1}`
-      return createPreset(current, resolvedName, settings)
-    })
-  }
-
-  /**
-   * Renames a specific preset.
-   * @param presetId Target preset id.
-   * @param name New preset name.
-   */
-  const renamePresetById = (presetId: string, name: string) => {
-    commitState(current => renamePreset(current, presetId, name))
-  }
-
-  /**
-   * Deletes a specific preset.
-   * @param presetId Target preset id.
-   */
-  const deletePresetById = (presetId: string) => {
-    commitState(current => deletePreset(current, presetId))
-  }
-
-  /**
-   * Saves settings to a specific preset.
-   * @param presetId Target preset id.
-   * @param settings Settings snapshot to persist.
-   */
-  const savePresetSettingsById = (presetId: string, settings: SettingsSnapshot) => {
-    commitState(current => updatePresetSettings(current, presetId, settings))
-  }
-
-  const activePreset = useMemo(() => getActivePreset(state), [state])
+  const {
+    presets,
+    activePreset,
+    activePresetId,
+    selectPreset,
+    createPreset,
+    updatePreset,
+    deletePreset,
+    clonePreset,
+  } = useUnit({
+    presets: $presets,
+    activePreset: $activePreset,
+    activePresetId: $activePresetId,
+    selectPreset: presetSelected,
+    createPreset: presetCreated,
+    updatePreset: presetUpdated,
+    deletePreset: presetDeleted,
+    clonePreset: presetCloned,
+  })
 
   return {
-    presets: state.presets,
-    activePresetId: state.activePresetId,
+    presets,
     activePreset,
+    activePresetId,
     selectPreset,
-    createNewPreset,
-    renamePresetById,
-    deletePresetById,
-    savePresetSettingsById,
+    createNewPreset: (settings, name) => createPreset({ settings, name }),
+    updatePresetById: (presetId, settings, name) => updatePreset({ presetId, settings, name }),
+    deletePresetById: deletePreset,
+    clonePresetById: clonePreset,
   }
 }

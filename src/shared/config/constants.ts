@@ -9,10 +9,11 @@ export const LEGACY_CAR_CLASSES_KEY = 'ac-time-car-classes'
 export const LEGACY_PARTICIPANTS_CSV_URL_KEY = 'ac-time-participants-csv-url'
 export const LEGACY_SETTINGS_PRESETS_STORAGE_KEY = 'ac-time-settings-presets'
 export const SETTINGS_PRESETS_STORAGE_KEY = 'settings-presets'
+export const SETTINGS_THRESHOLD_STORAGE_KEY = 'settings-threshold'
 
 export const DEFAULT_CLASS_RULES: CarClassRule[] = [
-  { name: 'Серебро', patterns: ['SUPER-PRODUCTION'] },
-  { name: 'Бронза', patterns: ['Concept C GT'] },
+  { name: 'Silver', patterns: ['SUPER-PRODUCTION'] },
+  { name: 'Bronze', patterns: ['Concept C GT'] },
 ]
 
 export const DEFAULT_SERVER_URL = 'https://ac8.yoklmnracing.ru/api/live-timings/leaderboard.json'

@@ -1,15 +1,9 @@
-// @anchor: leaderboard/pages/live-timing/model/settings-storage
-// @intent: Persist settings presets and migrate legacy localStorage keys.
+// Presets domain utilities: normalization, CRUD and clone naming.
 import type { CarClassRule, SettingsPreset, SettingsPresetsState, SettingsSnapshot } from '@/shared/types'
 import {
   DEFAULT_CLASS_RULES,
-  DEFAULT_PACE_PERCENT_THRESHOLD,
   DEFAULT_PARTICIPANTS_CSV_URL,
   DEFAULT_SERVER_URL,
-  LEGACY_SETTINGS_PRESETS_STORAGE_KEY,
-  MAX_PACE_PERCENT_THRESHOLD,
-  MIN_PACE_PERCENT_THRESHOLD,
-  SETTINGS_PRESETS_STORAGE_KEY,
 } from '@/shared/config/constants'
 import { dedupeCarClassRules } from './serialize'
 
@@ -26,39 +20,99 @@ export function createDefaultSettingsSnapshot(): SettingsSnapshot {
     participants: {
       csvUrl: DEFAULT_PARTICIPANTS_CSV_URL,
     },
-    pacePercentThreshold: DEFAULT_PACE_PERCENT_THRESHOLD,
   }
 }
 
 /**
- * Loads presets state from localStorage, including legacy migration.
- * @returns Valid presets state.
+ * Creates initial presets state for first-time users.
+ * @returns Default presets state.
  */
-export function loadSettingsPresetsState(): SettingsPresetsState {
-  const raw = localStorage.getItem(SETTINGS_PRESETS_STORAGE_KEY)
-    ?? localStorage.getItem(LEGACY_SETTINGS_PRESETS_STORAGE_KEY)
-  if (raw) {
-    const parsed = safeParseJson(raw)
-    if (parsed) {
-      const normalized = normalizeState(parsed)
-      if (normalized.presets.length > 0) {
-        saveSettingsPresetsState(normalized)
-        return normalized
-      }
-    }
+export function createDefaultPresetsState(): SettingsPresetsState {
+  return {
+    version: SETTINGS_PRESETS_VERSION,
+    activePresetId: 'e4606c07-42c7-4ab1-86b9-639e1ddfd3ea',
+    presets: [
+      {
+        id: '9d5388f6-2867-4cf5-801d-c883706d82c1',
+        name: 'AC7 Gold',
+        settings: {
+          serverUrl: 'https://ac7.yoklmnracing.ru/api/live-timings/leaderboard.json',
+          carClasses: [],
+          participants: {
+            csvUrl: 'https://github.com/aiko-atami/ac-time/releases/download/championship-537/participants-537.csv',
+          },
+        },
+      },
+      {
+        id: 'e4606c07-42c7-4ab1-86b9-639e1ddfd3ea',
+        name: 'AC8 Bronze Silver',
+        settings: {
+          serverUrl: 'https://ac8.yoklmnracing.ru/api/live-timings/leaderboard.json',
+          carClasses: [
+            {
+              name: 'Серебро',
+              patterns: ['SUPER-PRODUCTION'],
+            },
+            {
+              name: 'Бронза 1',
+              patterns: ['LADA 2118 Concept C GT'],
+            },
+            {
+              name: 'Бронза 2',
+              patterns: ['LADA 2118 Concept C GT'],
+            },
+          ],
+          participants: {
+            csvUrl: 'https://github.com/aiko-atami/ac-time/releases/download/championship-537/participants-537.csv',
+          },
+        },
+      },
+      {
+        id: 'c1a34007-0e08-41e7-8e48-dd5312fef72d',
+        name: 'AC9',
+        settings: {
+          serverUrl: 'https://ac9.yoklmnracing.ru/api/live-timings/leaderboard.json',
+          carClasses: [],
+          participants: {
+            csvUrl: 'https://github.com/aiko-atami/ac-time/releases/download/championship-538/participants-538.csv',
+          },
+        },
+      },
+    ],
   }
-
-  const defaults = createDefaultPresetsState()
-  saveSettingsPresetsState(defaults)
-  return defaults
 }
 
 /**
- * Saves presets state to localStorage.
- * @param state Presets state.
+ * Normalizes an arbitrary state payload into a valid presets state.
+ * @param value Untrusted parsed JSON value.
+ * @returns Sanitized state.
  */
-export function saveSettingsPresetsState(state: SettingsPresetsState): void {
-  localStorage.setItem(SETTINGS_PRESETS_STORAGE_KEY, JSON.stringify(state))
+export function normalizeState(value: unknown): SettingsPresetsState {
+  const fallback = createDefaultPresetsState()
+  if (!value || typeof value !== 'object') {
+    return fallback
+  }
+
+  const source = value as Partial<SettingsPresetsState>
+  const rawPresets = Array.isArray(source.presets) ? source.presets : []
+  const presets = rawPresets
+    .map(item => normalizePreset(item))
+    .filter((item): item is SettingsPreset => item !== null)
+
+  if (presets.length === 0) {
+    return fallback
+  }
+
+  const activePresetId = typeof source.activePresetId === 'string'
+    && presets.some(preset => preset.id === source.activePresetId)
+    ? source.activePresetId
+    : presets[0].id
+
+  return {
+    version: SETTINGS_PRESETS_VERSION,
+    activePresetId,
+    presets,
+  }
 }
 
 /**
@@ -91,13 +145,10 @@ export function createPreset(
   name: string,
   settings: SettingsSnapshot,
 ): SettingsPresetsState {
-  const now = new Date().toISOString()
   const preset: SettingsPreset = {
     id: createPresetId(),
     name: normalizePresetName(name),
     settings: normalizeSnapshot(settings),
-    createdAt: now,
-    updatedAt: now,
   }
 
   return {
@@ -108,48 +159,20 @@ export function createPreset(
 }
 
 /**
- * Updates settings of an existing preset.
+ * Updates fields of an existing preset.
  * @param state Source state.
  * @param presetId Preset id.
- * @param settings New settings.
+ * @param nextName New display name.
+ * @param nextSettings New settings value.
  * @returns Updated state.
  */
-export function updatePresetSettings(
+export function updatePreset(
   state: SettingsPresetsState,
   presetId: string,
-  settings: SettingsSnapshot,
+  nextName: string,
+  nextSettings: SettingsSnapshot,
 ): SettingsPresetsState {
-  const now = new Date().toISOString()
-  return {
-    ...state,
-    presets: state.presets.map((preset) => {
-      if (preset.id !== presetId) {
-        return preset
-      }
-
-      return {
-        ...preset,
-        settings: normalizeSnapshot(settings),
-        updatedAt: now,
-      }
-    }),
-  }
-}
-
-/**
- * Renames a preset.
- * @param state Source state.
- * @param presetId Preset id.
- * @param name New display name.
- * @returns Updated state.
- */
-export function renamePreset(
-  state: SettingsPresetsState,
-  presetId: string,
-  name: string,
-): SettingsPresetsState {
-  const now = new Date().toISOString()
-  const normalizedName = normalizePresetName(name)
+  const normalizedName = normalizePresetName(nextName)
 
   return {
     ...state,
@@ -161,7 +184,7 @@ export function renamePreset(
       return {
         ...preset,
         name: normalizedName,
-        updatedAt: now,
+        settings: normalizeSnapshot(nextSettings),
       }
     }),
   }
@@ -195,6 +218,31 @@ export function deletePreset(state: SettingsPresetsState, presetId: string): Set
 }
 
 /**
+ * Clones preset by id and keeps active preset unchanged.
+ * @param state Source state.
+ * @param presetId Source preset id.
+ * @returns Updated state.
+ */
+export function clonePreset(state: SettingsPresetsState, presetId: string): SettingsPresetsState {
+  const sourcePreset = state.presets.find(preset => preset.id === presetId)
+  if (!sourcePreset) {
+    return state
+  }
+
+  const cloneName = createCloneName(sourcePreset.name, state.presets)
+  const clonedPreset: SettingsPreset = {
+    ...sourcePreset,
+    id: createPresetId(),
+    name: cloneName,
+  }
+
+  return {
+    ...state,
+    presets: [...state.presets, clonedPreset],
+  }
+}
+
+/**
  * Returns active preset from state.
  * @param state Presets state.
  * @returns Active preset or null.
@@ -202,121 +250,6 @@ export function deletePreset(state: SettingsPresetsState, presetId: string): Set
 export function getActivePreset(state: SettingsPresetsState): SettingsPreset | null {
   const active = state.presets.find(preset => preset.id === state.activePresetId)
   return active ?? state.presets[0] ?? null
-}
-
-/**
- * Parses arbitrary JSON safely.
- * @param raw JSON source string.
- * @returns Parsed value or null.
- */
-function safeParseJson(raw: string): unknown | null {
-  try {
-    return JSON.parse(raw) as unknown
-  }
-  catch {
-    return null
-  }
-}
-
-/**
- * Creates initial presets state for first-time users.
- * @returns Default presets state.
- */
-function createDefaultPresetsState(): SettingsPresetsState {
-  return {
-    version: SETTINGS_PRESETS_VERSION,
-    activePresetId: 'e4606c07-42c7-4ab1-86b9-639e1ddfd3ea',
-    presets: [
-      {
-        id: '9d5388f6-2867-4cf5-801d-c883706d82c1',
-        name: 'AC7 Gold',
-        settings: {
-          serverUrl: 'https://ac7.yoklmnracing.ru/api/live-timings/leaderboard.json',
-          carClasses: [],
-          participants: {
-            csvUrl: 'https://github.com/aiko-atami/ac-time/releases/download/championship-537/participants-537.csv',
-          },
-          pacePercentThreshold: DEFAULT_PACE_PERCENT_THRESHOLD,
-        },
-        createdAt: '2026-02-11T15:18:33.712Z',
-        updatedAt: '2026-02-12T13:50:56.830Z',
-      },
-      {
-        id: 'e4606c07-42c7-4ab1-86b9-639e1ddfd3ea',
-        name: 'AC8 Bronze Silver',
-        settings: {
-          serverUrl: 'https://ac8.yoklmnracing.ru/api/live-timings/leaderboard.json',
-          carClasses: [
-            {
-              name: 'Серебро',
-              patterns: ['SUPER-PRODUCTION'],
-            },
-            {
-              name: 'Бронза 1',
-              patterns: ['LADA 2118 Concept C GT'],
-            },
-            {
-              name: 'Бронза 2',
-              patterns: ['LADA 2118 Concept C GT'],
-            },
-          ],
-          participants: {
-            csvUrl: 'https://github.com/aiko-atami/ac-time/releases/download/championship-537/participants-537.csv',
-          },
-          pacePercentThreshold: DEFAULT_PACE_PERCENT_THRESHOLD,
-        },
-        createdAt: '2026-02-11T15:19:13.081Z',
-        updatedAt: '2026-02-12T13:51:10.017Z',
-      },
-      {
-        id: 'c1a34007-0e08-41e7-8e48-dd5312fef72d',
-        name: 'AC9',
-        settings: {
-          serverUrl: 'https://ac9.yoklmnracing.ru/api/live-timings/leaderboard.json',
-          carClasses: [],
-          participants: {
-            csvUrl: 'https://github.com/aiko-atami/ac-time/releases/download/championship-538/participants-538.csv',
-          },
-          pacePercentThreshold: DEFAULT_PACE_PERCENT_THRESHOLD,
-        },
-        createdAt: '2026-02-11T15:25:05.113Z',
-        updatedAt: '2026-02-12T12:36:57.429Z',
-      },
-    ],
-  }
-}
-
-/**
- * Normalizes an arbitrary state payload into a valid presets state.
- * @param value Untrusted parsed JSON value.
- * @returns Sanitized state.
- */
-function normalizeState(value: unknown): SettingsPresetsState {
-  const fallback = createDefaultPresetsState()
-  if (!value || typeof value !== 'object') {
-    return fallback
-  }
-
-  const source = value as Partial<SettingsPresetsState>
-  const rawPresets = Array.isArray(source.presets) ? source.presets : []
-  const presets = rawPresets
-    .map(item => normalizePreset(item))
-    .filter((item): item is SettingsPreset => item !== null)
-
-  if (presets.length === 0) {
-    return fallback
-  }
-
-  const activePresetId = typeof source.activePresetId === 'string'
-    && presets.some(preset => preset.id === source.activePresetId)
-    ? source.activePresetId
-    : presets[0].id
-
-  return {
-    version: SETTINGS_PRESETS_VERSION,
-    activePresetId,
-    presets,
-  }
 }
 
 /**
@@ -330,7 +263,6 @@ function normalizePreset(value: unknown): SettingsPreset | null {
   }
 
   const source = value as Partial<SettingsPreset>
-  const now = new Date().toISOString()
   const id = typeof source.id === 'string' && source.id.trim()
     ? source.id
     : createPresetId()
@@ -339,8 +271,6 @@ function normalizePreset(value: unknown): SettingsPreset | null {
     id,
     name: normalizePresetName(source.name),
     settings: normalizeSnapshot(source.settings),
-    createdAt: typeof source.createdAt === 'string' ? source.createdAt : now,
-    updatedAt: typeof source.updatedAt === 'string' ? source.updatedAt : now,
   }
 }
 
@@ -364,27 +294,7 @@ function normalizeSnapshot(snapshot: unknown): SettingsSnapshot {
     participants: {
       csvUrl: normalizeOptionalHttpUrl(participants?.csvUrl, defaults.participants.csvUrl),
     },
-    pacePercentThreshold: normalizePacePercentThreshold(source.pacePercentThreshold, defaults.pacePercentThreshold),
   }
-}
-
-/**
- * Validates pace percentage threshold value.
- * @param value Candidate threshold value.
- * @param fallback Fallback threshold.
- * @returns Valid threshold in configured range.
- */
-function normalizePacePercentThreshold(value: unknown, fallback: number): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    return fallback
-  }
-
-  const rounded = Math.round(value)
-  if (rounded < MIN_PACE_PERCENT_THRESHOLD || rounded > MAX_PACE_PERCENT_THRESHOLD) {
-    return fallback
-  }
-
-  return rounded
 }
 
 /**
@@ -432,8 +342,7 @@ function normalizeCarClasses(value: unknown): CarClassRule[] {
     })
     .filter((item): item is CarClassRule => item !== null)
 
-  const normalized = dedupeCarClassRules(rawRules)
-  return normalized
+  return dedupeCarClassRules(rawRules)
 }
 
 /**
@@ -471,6 +380,30 @@ function normalizePresetName(value: unknown): string {
   }
 
   return trimmed.slice(0, 64)
+}
+
+/**
+ * Builds unique clone suffix name: "Name (1)", "Name (2)", ...
+ * @param sourceName Original preset name.
+ * @param presets Existing presets.
+ * @returns Unique clone display name.
+ */
+function createCloneName(sourceName: string, presets: SettingsPreset[]): string {
+  const baseName = normalizePresetName(sourceName)
+  const normalizedNames = new Set(
+    presets.map(preset => preset.name.trim().toLowerCase()),
+  )
+
+  let index = 1
+  while (index < Number.MAX_SAFE_INTEGER) {
+    const candidate = `${baseName} (${index})`
+    if (!normalizedNames.has(candidate.toLowerCase())) {
+      return candidate
+    }
+    index += 1
+  }
+
+  return `${baseName} (${Date.now()})`
 }
 
 /**

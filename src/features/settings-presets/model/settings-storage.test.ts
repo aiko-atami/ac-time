@@ -1,24 +1,20 @@
-// Tests for settings-storage CRUD operations and normalization logic.
+// Tests for settings presets pure CRUD and normalization utilities.
 import type { SettingsPresetsState, SettingsSnapshot } from '@/shared/types'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import { DEFAULT_SERVER_URL } from '@/shared/config/constants'
 import {
-  DEFAULT_PACE_PERCENT_THRESHOLD,
-  DEFAULT_SERVER_URL,
-} from '@/shared/config/constants'
-import {
+  clonePreset,
   createDefaultSettingsSnapshot,
   createPreset,
   deletePreset,
   getActivePreset,
-  loadSettingsPresetsState,
-  renamePreset,
-  saveSettingsPresetsState,
+  normalizeState,
   selectActivePreset,
-  updatePresetSettings,
+  updatePreset,
 } from './settings-storage'
 
 /**
- * Produces a minimal valid presets state with one preset (no localStorage dependency).
+ * Produces a minimal valid presets state with one preset.
  * @param overrides Select fields to override.
  * @returns Test presets state.
  */
@@ -28,9 +24,8 @@ function createTestState(overrides: Partial<SettingsPresetsState> = {}): Setting
     id: 'test-preset-1',
     name: 'Test',
     settings: snapshot,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
   }
+
   return {
     version: 1,
     presets: [preset],
@@ -40,10 +35,9 @@ function createTestState(overrides: Partial<SettingsPresetsState> = {}): Setting
 }
 
 describe('createDefaultSettingsSnapshot', () => {
-  it('should return snapshot with default server URL and pace threshold', () => {
+  it('should return snapshot with default server URL', () => {
     const snapshot = createDefaultSettingsSnapshot()
     expect(snapshot.serverUrl).toBe(DEFAULT_SERVER_URL)
-    expect(snapshot.pacePercentThreshold).toBe(DEFAULT_PACE_PERCENT_THRESHOLD)
     expect(snapshot.carClasses).toBeInstanceOf(Array)
     expect(snapshot.participants).toBeDefined()
   })
@@ -78,50 +72,63 @@ describe('createPreset', () => {
   })
 })
 
-describe('updatePresetSettings', () => {
-  it('should update settings of the target preset', () => {
+describe('updatePreset', () => {
+  it('should update name and settings of the target preset', () => {
     const state = createTestState()
     const presetId = state.presets[0].id
     const newSettings: SettingsSnapshot = {
       ...createDefaultSettingsSnapshot(),
       serverUrl: 'https://new-server.test/api.json',
     }
-    const result = updatePresetSettings(state, presetId, newSettings)
+    const result = updatePreset(state, presetId, 'Renamed', newSettings)
     const updated = result.presets.find(p => p.id === presetId)
+    expect(updated?.name).toBe('Renamed')
     expect(updated?.settings.serverUrl).toBe('https://new-server.test/api.json')
-  })
-
-  it('should not mutate other presets', () => {
-    const state = createTestState()
-    const snapshot = createDefaultSettingsSnapshot()
-    const withExtra = createPreset(state, 'Other', snapshot)
-    const presetId = withExtra.presets[0].id
-    const otherId = withExtra.presets[1].id
-    const newSettings: SettingsSnapshot = {
-      ...createDefaultSettingsSnapshot(),
-      serverUrl: 'https://changed.test/api.json',
-    }
-    const result = updatePresetSettings(withExtra, presetId, newSettings)
-    const other = result.presets.find(p => p.id === otherId)
-    expect(other?.settings.serverUrl).not.toBe('https://changed.test/api.json')
   })
 })
 
-describe('renamePreset', () => {
-  it('should rename the target preset', () => {
-    const state = createTestState()
-    const presetId = state.presets[0].id
-    const result = renamePreset(state, presetId, 'Renamed')
-    const renamed = result.presets.find(p => p.id === presetId)
-    expect(renamed?.name).toBe('Renamed')
+describe('clonePreset', () => {
+  it('should create a clone with (1) suffix and same settings', () => {
+    const state = createTestState({
+      presets: [
+        {
+          id: 'a',
+          name: 'Race',
+          settings: createDefaultSettingsSnapshot(),
+        },
+      ],
+      activePresetId: 'a',
+    })
+
+    const result = clonePreset(state, 'a')
+    expect(result.presets.length).toBe(2)
+
+    const clone = result.presets.find(p => p.id !== 'a')
+    expect(clone?.name).toBe('Race (1)')
+    expect(clone?.settings).toEqual(state.presets[0].settings)
+    expect(result.activePresetId).toBe('a')
   })
 
-  it('should trim whitespace from name', () => {
-    const state = createTestState()
-    const presetId = state.presets[0].id
-    const result = renamePreset(state, presetId, '  Spaced  ')
-    const renamed = result.presets.find(p => p.id === presetId)
-    expect(renamed!.name).toBe('Spaced')
+  it('should increment suffix when clone name already exists', () => {
+    const state = createTestState({
+      presets: [
+        {
+          id: 'a',
+          name: 'Race',
+          settings: createDefaultSettingsSnapshot(),
+        },
+        {
+          id: 'b',
+          name: 'Race (1)',
+          settings: createDefaultSettingsSnapshot(),
+        },
+      ],
+      activePresetId: 'a',
+    })
+
+    const result = clonePreset(state, 'a')
+    const names = result.presets.map(p => p.name)
+    expect(names).toContain('Race (2)')
   })
 })
 
@@ -168,31 +175,31 @@ describe('getActivePreset', () => {
   })
 })
 
-describe('loadSettingsPresetsState / saveSettingsPresetsState', () => {
-  const storage = new Map<string, string>()
+describe('normalizeState', () => {
+  it('should normalize invalid payload to default state', () => {
+    const normalized = normalizeState(null)
+    expect(normalized.presets.length).toBeGreaterThan(0)
+    expect(normalized.activePresetId).toBeTruthy()
+  })
 
-  beforeEach(() => {
-    storage.clear()
-    vi.stubGlobal('localStorage', {
-      getItem: (key: string) => storage.get(key) ?? null,
-      setItem: (key: string, value: string) => storage.set(key, value),
-      removeItem: (key: string) => storage.delete(key),
-      clear: () => storage.clear(),
+  it('should drop invalid pacePercentThreshold legacy field from snapshots', () => {
+    const normalized = normalizeState({
+      version: 1,
+      activePresetId: 'x',
+      presets: [
+        {
+          id: 'x',
+          name: 'Legacy',
+          settings: {
+            serverUrl: 'https://example.com/leaderboard.json',
+            participants: { csvUrl: '' },
+            carClasses: [],
+            pacePercentThreshold: 113,
+          },
+        },
+      ],
     })
-  })
 
-  it('should round-trip state through localStorage', () => {
-    const state = createTestState()
-    const snapshot = createDefaultSettingsSnapshot()
-    const withExtra = createPreset(state, 'Saved Preset', snapshot)
-    saveSettingsPresetsState(withExtra)
-    const loaded = loadSettingsPresetsState()
-    expect(loaded.presets.find(p => p.name === 'Saved Preset')).toBeDefined()
-  })
-
-  it('should return default state when localStorage is empty', () => {
-    const state = loadSettingsPresetsState()
-    expect(state.presets.length).toBeGreaterThanOrEqual(1)
-    expect(state.activePresetId).toBeDefined()
+    expect(normalized.presets[0].settings).not.toHaveProperty('pacePercentThreshold')
   })
 })

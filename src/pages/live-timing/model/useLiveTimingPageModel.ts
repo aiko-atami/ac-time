@@ -2,7 +2,8 @@
 import type { ProcessedEntry } from '@/shared/types'
 import { useMemo } from 'react'
 import { useSettingsPresets } from '@/features/settings-presets'
-import { DEFAULT_PACE_PERCENT_THRESHOLD, DEFAULT_REFRESH_INTERVAL } from '@/shared/config/constants'
+import { useSettingsThreshold } from '@/features/settings-threshold'
+import { DEFAULT_REFRESH_INTERVAL } from '@/shared/config/constants'
 import { useChampionshipParticipants } from './championship-participants/useChampionshipParticipants'
 import { useLeaderboardFilters } from './leaderboard/useLeaderboardFilters'
 import { useLeaderboard } from './useLeaderboard'
@@ -33,6 +34,7 @@ interface UseLiveTimingPageModelReturn {
  */
 export function useLiveTimingPageModel(): UseLiveTimingPageModelReturn {
   const presets = useSettingsPresets()
+  const threshold = useSettingsThreshold()
 
   const activeSettings = presets.activePreset?.settings ?? null
   const enableClassGrouping = (activeSettings?.carClasses.length ?? 0) > 0
@@ -86,7 +88,7 @@ export function useLiveTimingPageModel(): UseLiveTimingPageModelReturn {
     toggleSortDirection,
     showRegisteredOnly,
     setShowRegisteredOnly,
-    pacePercentThreshold: activeSettings?.pacePercentThreshold ?? DEFAULT_PACE_PERCENT_THRESHOLD,
+    pacePercentThreshold: threshold.pacePercentThreshold,
     isRegistered,
   }
 }

@@ -1,4 +1,4 @@
-// App router setup with known route registrations.
+// Router instance only — non-component export, kept separate from views for Fast Refresh.
 import { createRouter } from '@argon-router/core'
 import { routes } from '@/shared/routing'
 

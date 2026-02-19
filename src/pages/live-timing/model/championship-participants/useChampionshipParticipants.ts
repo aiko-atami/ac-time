@@ -14,7 +14,8 @@ interface Participant {
 
 interface NormalizedParticipant {
   nameKey: string
-  strictKey: string
+  carClass: string
+  carTokens: string[]
 }
 
 /**
@@ -91,15 +92,49 @@ function toNameKey(value: string): string {
     .join(' ')
 }
 
+/** Noise tokens filtered from car names (prefixes, short words, years). */
+const CAR_TOKEN_STOPWORDS = new Set<string>([])
+
 /**
- * Builds strict key containing class, car and driver name signature.
- * @param carClass Car class label.
- * @param car Car model/name.
- * @param nameKey Canonical driver name key.
- * @returns Stable strict-match key.
+ * Tokenizes car name into comparable word set.
+ * Splits by whitespace/hyphens, lowercases, filters noise (years, ≤1-char, stopwords).
+ * @param car Raw car name string.
+ * @returns Normalized token array.
  */
-function toStrictKey(carClass: string, car: string, nameKey: string): string {
-  return `${normalizeText(carClass)}|${normalizeText(car)}|${nameKey}`
+function toCarTokens(car: string): string[] {
+  return normalizeText(car)
+    .split(/[\s\-_]+/)
+    .filter((t) => {
+      if (t.length <= 1)
+        return false
+      if (/^\d{4}$/.test(t))
+        return false
+      if (CAR_TOKEN_STOPWORDS.has(t))
+        return false
+      return true
+    })
+}
+
+/**
+ * Checks if two car token arrays share at least `minOverlap` common tokens.
+ * @param a First token array.
+ * @param b Second token array.
+ * @param minOverlap Minimum shared tokens required.
+ * @returns True when overlap threshold met.
+ */
+function hasCarTokenOverlap(a: string[], b: string[], minOverlap = 2): boolean {
+  if (a.length === 0 || b.length === 0)
+    return false
+  const setB = new Set(b)
+  let count = 0
+  for (const token of a) {
+    if (setB.has(token)) {
+      count++
+      if (count >= minOverlap)
+        return true
+    }
+  }
+  return false
 }
 
 interface UseChampionshipParticipantsOptions {
@@ -188,17 +223,22 @@ export function useChampionshipParticipants(options: UseChampionshipParticipants
       const nameKey = toNameKey(participant.driver)
       return {
         nameKey,
-        strictKey: toStrictKey(participant.carClass, participant.car, nameKey),
+        carClass: normalizeText(participant.carClass),
+        carTokens: toCarTokens(participant.car),
       }
     })
   }, [participants])
 
   const participantsByName = useMemo(() => {
-    return new Set(normalizedParticipants.map(participant => participant.nameKey))
-  }, [normalizedParticipants])
-
-  const participantsByStrictMatch = useMemo(() => {
-    return new Set(normalizedParticipants.map(participant => participant.strictKey))
+    const map = new Map<string, NormalizedParticipant[]>()
+    for (const p of normalizedParticipants) {
+      const list = map.get(p.nameKey)
+      if (list)
+        list.push(p)
+      else
+        map.set(p.nameKey, [p])
+    }
+    return map
   }, [normalizedParticipants])
 
   /**
@@ -211,13 +251,19 @@ export function useChampionshipParticipants(options: UseChampionshipParticipants
       return false
 
     const entryNameKey = toNameKey(entry.driverName)
-    if (matchByDriverNameOnly) {
-      return participantsByName.has(entryNameKey)
-    }
+    const candidates = participantsByName.get(entryNameKey)
+    if (!candidates)
+      return false
+    if (matchByDriverNameOnly)
+      return true
 
-    const strictKey = toStrictKey(entry.carClass, entry.carName, entryNameKey)
-    return participantsByStrictMatch.has(strictKey)
-  }, [matchByDriverNameOnly, normalizedParticipants.length, participantsByName, participantsByStrictMatch])
+    const entryClass = normalizeText(entry.carClass)
+    const entryCarTokens = toCarTokens(entry.carName)
+
+    return candidates.some(
+      p => p.carClass === entryClass && hasCarTokenOverlap(p.carTokens, entryCarTokens),
+    )
+  }, [matchByDriverNameOnly, normalizedParticipants.length, participantsByName])
 
   return { participants, loading, isRegistered }
 }

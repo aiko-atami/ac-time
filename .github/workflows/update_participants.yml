@@ -2,7 +2,6 @@ name: Update Participants
 
 on:
   schedule:
-    # GitHub cron is in UTC. 05:00–21:00 UTC.
     - cron: '0 5-21/2 * * *' # every 2 hours, 05:00–21:00 UTC
   workflow_dispatch:
 
@@ -19,9 +18,14 @@ jobs:
       matrix:
         include:
           - championship_id: '537'
+            championship_name: 'HTRS Touring [9]'
             scrape_url: 'https://yoklmnracing.ru/championships/537'
           - championship_id: '538'
+            championship_name: 'HTRS Mazda MX-5 Cup [2]'
             scrape_url: 'https://yoklmnracing.ru/championships/538'
+          - championship_id: '543'
+            championship_name: 'HTRS Corsa Endurance Cup [1]'
+            scrape_url: 'https://yoklmnracing.ru/championships/543'
     steps:
       - name: Download Scraper Binary
         env:
@@ -47,14 +51,25 @@ jobs:
         run: |
           CHAMPIONSHIP_ID='${{ matrix.championship_id }}'
           TAG="championship-${CHAMPIONSHIP_ID}"
+          TEMP_TAG="${TAG}-pending"
           FILE="participants-${CHAMPIONSHIP_ID}.csv"
           FILE_REVERSED="participants-${CHAMPIONSHIP_ID}-name-reversed.csv"
           README_LINK="https://github.com/$GITHUB_REPO/blob/main/scraper/README.md"
 
-          NOTES="Updated: $(date -u +'%Y-%m-%d %H:%M:%S') UTC.
+          CHAMPIONSHIP_NAME='${{ matrix.championship_name }}'
+
+          NOTES="${CHAMPIONSHIP_NAME}: Updated: $(date -u +'%Y-%m-%d %H:%M:%S') UTC.
           See scraper [README]($README_LINK) for details."
 
-          gh release delete "$TAG" --repo "$GITHUB_REPO" --cleanup-tag --yes || true
-          gh release create "$TAG" "$FILE" "$FILE_REVERSED" --repo "$GITHUB_REPO" \
-            --title "Championship $CHAMPIONSHIP_ID" \
+          # Verify output files exist before touching any release
+          [ -f "$FILE" ] && [ -f "$FILE_REVERSED" ] || { echo "ERROR: output files missing"; exit 1; }
+
+          # Step 1: create new release under temp tag (old release untouched if this fails)
+          gh release delete "$TEMP_TAG" --repo "$GITHUB_REPO" --cleanup-tag --yes 2>/dev/null || true
+          gh release create "$TEMP_TAG" "$FILE" "$FILE_REVERSED" --repo "$GITHUB_REPO" \
+            --title "${CHAMPIONSHIP_NAME}" \
             --notes "$NOTES"
+
+          # Step 2: new release is ready — now atomically swap tags
+          gh release delete "$TAG" --repo "$GITHUB_REPO" --cleanup-tag --yes 2>/dev/null || true
+          gh release edit "$TEMP_TAG" --repo "$GITHUB_REPO" --tag "$TAG" --title "${CHAMPIONSHIP_NAME}"

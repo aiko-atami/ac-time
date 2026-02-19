@@ -51,25 +51,22 @@ jobs:
         run: |
           CHAMPIONSHIP_ID='${{ matrix.championship_id }}'
           TAG="championship-${CHAMPIONSHIP_ID}"
-          TEMP_TAG="${TAG}-pending"
           FILE="participants-${CHAMPIONSHIP_ID}.csv"
           FILE_REVERSED="participants-${CHAMPIONSHIP_ID}-name-reversed.csv"
           README_LINK="https://github.com/$GITHUB_REPO/blob/main/scraper/README.md"
 
           CHAMPIONSHIP_NAME='${{ matrix.championship_name }}'
 
-          NOTES="${CHAMPIONSHIP_NAME}: Updated: $(date -u +'%Y-%m-%d %H:%M:%S') UTC.
+          NOTES="Updated: $(date -u +'%Y-%m-%d %H:%M:%S') UTC.
           See scraper [README]($README_LINK) for details."
 
-          # Verify output files exist before touching any release
-          [ -f "$FILE" ] && [ -f "$FILE_REVERSED" ] || { echo "ERROR: output files missing"; exit 1; }
+          # Validate output files exist and are non-empty before touching the release
+          for f in "$FILE" "$FILE_REVERSED"; do
+            [ -s "$f" ] || { echo "ERROR: '$f' is missing or empty"; exit 1; }
+          done
 
-          # Step 1: create new release under temp tag (old release untouched if this fails)
-          gh release delete "$TEMP_TAG" --repo "$GITHUB_REPO" --cleanup-tag --yes 2>/dev/null || true
-          gh release create "$TEMP_TAG" "$FILE" "$FILE_REVERSED" --repo "$GITHUB_REPO" \
+          # Delete existing release (if any) and recreate with the same tag
+          gh release delete "$TAG" --repo "$GITHUB_REPO" --cleanup-tag --yes 2>/dev/null || true
+          gh release create "$TAG" "$FILE" "$FILE_REVERSED" --repo "$GITHUB_REPO" \
             --title "${CHAMPIONSHIP_NAME}" \
             --notes "$NOTES"
-
-          # Step 2: new release is ready — now atomically swap tags
-          gh release delete "$TAG" --repo "$GITHUB_REPO" --cleanup-tag --yes 2>/dev/null || true
-          gh release edit "$TEMP_TAG" --repo "$GITHUB_REPO" --tag "$TAG" --title "${CHAMPIONSHIP_NAME}"

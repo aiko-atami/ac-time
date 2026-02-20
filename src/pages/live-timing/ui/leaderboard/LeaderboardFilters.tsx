@@ -3,6 +3,7 @@
 import { IconArrowDown, IconArrowUp } from '@tabler/icons-react'
 import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
+import { Input } from '@/shared/ui/input'
 import {
   Select,
   SelectContent,
@@ -21,6 +22,8 @@ interface LeaderboardFiltersProps {
   onSortDirectionToggle: () => void
   showRegisteredOnly: boolean
   onToggleRegisteredOnly: (value: boolean) => void
+  searchQuery: string
+  onSearchQueryChange: (value: string) => void
 }
 
 const SORT_OPTIONS = [
@@ -54,6 +57,8 @@ export function LeaderboardFilters(props: LeaderboardFiltersProps) {
     onSortDirectionToggle,
     showRegisteredOnly,
     onToggleRegisteredOnly,
+    searchQuery,
+    onSearchQueryChange,
   } = props
 
   /**
@@ -116,7 +121,21 @@ export function LeaderboardFilters(props: LeaderboardFiltersProps) {
 
       </div>
 
-      <div className="order-last basis-full sm:order-none sm:basis-auto sm:flex-1 sm:min-w-[120px] flex items-end">
+      <div className="flex-1 min-w-[180px]">
+        <label className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-1 block">
+          Search
+        </label>
+        <Input
+          size="sm"
+          type="text"
+          value={searchQuery}
+          onChange={event => onSearchQueryChange(event.target.value)}
+          placeholder="Search driver, car, team"
+          aria-label="Search by driver, car or team"
+        />
+      </div>
+
+      <div className="order-last basis-full sm:order-0 sm:basis-auto sm:flex-1 sm:min-w-[120px] flex items-end">
         <div className="flex items-center gap-2 h-7">
           <Checkbox
             id="show-registered"

@@ -81,8 +81,8 @@ export function LeaderboardFilters(props: LeaderboardFiltersProps) {
   }
 
   return (
-    <div className="flex flex-wrap gap-2 mb-4 p-3 rounded-lg border bg-card">
-      <div className="flex-1 min-w-[120px]">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 p-3 rounded-lg border bg-card">
+      <div className="flex flex-col">
         <label className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-1 block">
           Class
         </label>
@@ -100,7 +100,7 @@ export function LeaderboardFilters(props: LeaderboardFiltersProps) {
         </Select>
       </div>
 
-      <div className="flex-1 min-w-[120px]">
+      <div className="flex flex-col">
         <label className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-1 block">
           Sort By
         </label>
@@ -118,10 +118,9 @@ export function LeaderboardFilters(props: LeaderboardFiltersProps) {
             ))}
           </SelectContent>
         </Select>
-
       </div>
 
-      <div className="flex-1 min-w-[180px]">
+      <div className="flex flex-col">
         <label className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-1 block">
           Search
         </label>
@@ -135,8 +134,8 @@ export function LeaderboardFilters(props: LeaderboardFiltersProps) {
         />
       </div>
 
-      <div className="order-last basis-full sm:order-0 sm:basis-auto sm:flex-1 sm:min-w-[120px] flex items-end">
-        <div className="flex items-center gap-2 h-7">
+      <div className="flex items-end gap-2 h-full">
+        <div className="flex-1 flex items-center gap-2 h-7 mb-px">
           <Checkbox
             id="show-registered"
             checked={showRegisteredOnly}
@@ -149,23 +148,22 @@ export function LeaderboardFilters(props: LeaderboardFiltersProps) {
             Registered only
           </label>
         </div>
-      </div>
-
-      <div className="flex items-end shrink-0">
-        <Button
-          onClick={onSortDirectionToggle}
-          variant="outline"
-          size="icon-sm"
-          title={sortAsc ? 'Ascending' : 'Descending'}
-        >
-          {sortAsc
-            ? (
-                <IconArrowUp className="h-4 w-4" />
-              )
-            : (
-                <IconArrowDown className="h-4 w-4" />
-              )}
-        </Button>
+        <div className="shrink-0 mb-px">
+          <Button
+            onClick={onSortDirectionToggle}
+            variant="outline"
+            size="icon-sm"
+            title={sortAsc ? 'Ascending' : 'Descending'}
+          >
+            {sortAsc
+              ? (
+                  <IconArrowUp className="h-4 w-4" />
+                )
+              : (
+                  <IconArrowDown className="h-4 w-4" />
+                )}
+          </Button>
+        </div>
       </div>
     </div>
   )

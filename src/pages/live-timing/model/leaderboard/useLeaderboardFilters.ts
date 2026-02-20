@@ -4,6 +4,7 @@ import type { ProcessedEntry } from '@/shared/types'
 import { useUnit } from 'effector-react'
 import { useEffect, useMemo } from 'react'
 import {
+  $searchQuery,
   $selectedClass,
   $showRegisteredOnly,
   $sortAsc,
@@ -11,6 +12,7 @@ import {
   classGroupingAvailabilityChanged,
   classSelected,
   registeredOnlySet,
+  searchQueryChanged,
   sortDirectionSet,
   sortDirectionToggleClicked,
   sortFieldSelected,
@@ -28,6 +30,8 @@ interface UseLeaderboardFiltersReturn {
   toggleSortDirection: () => void
   showRegisteredOnly: boolean
   setShowRegisteredOnly: (value: boolean) => void
+  searchQuery: string
+  setSearchQuery: (value: string) => void
 }
 
 /**
@@ -68,6 +72,33 @@ function compareEntries(
 }
 
 /**
+ * Normalizes search query for consistent matching behavior.
+ * @param value Raw search query entered by user.
+ * @returns Lowercased and trimmed query string.
+ */
+function normalizeSearchValue(value: string): string {
+  return value.trim().toLowerCase()
+}
+
+/**
+ * Checks whether leaderboard entry matches active search query.
+ * @param entry Leaderboard entry candidate.
+ * @param query Normalized search query.
+ * @returns `true` when query is empty or matches any searchable field.
+ */
+function matchesSearch(entry: ProcessedEntry, query: string): boolean {
+  if (!query)
+    return true
+
+  return (
+    entry.driverName.toLowerCase().includes(query)
+    || entry.teamName.toLowerCase().includes(query)
+    || entry.carName.toLowerCase().includes(query)
+    || entry.carModel.toLowerCase().includes(query)
+  )
+}
+
+/**
  * Custom hook for filtering and sorting leaderboard data
  * Handles car class filtering and multi-field sorting
  */
@@ -82,22 +113,26 @@ export function useLeaderboardFilters(
     sortBy,
     sortAsc,
     showRegisteredOnly,
+    searchQuery,
     setSelectedClass,
     setSortBy,
     setSortAsc,
     toggleSortDirection,
     setShowRegisteredOnly,
+    setSearchQuery,
     setClassGroupingAvailability,
   } = useUnit({
     selectedClass: $selectedClass,
     sortBy: $sortBy,
     sortAsc: $sortAsc,
     showRegisteredOnly: $showRegisteredOnly,
+    searchQuery: $searchQuery,
     setSelectedClass: classSelected,
     setSortBy: sortFieldSelected,
     setSortAsc: sortDirectionSet,
     toggleSortDirection: sortDirectionToggleClicked,
     setShowRegisteredOnly: registeredOnlySet,
+    setSearchQuery: searchQueryChanged,
     setClassGroupingAvailability: classGroupingAvailabilityChanged,
   })
 
@@ -116,6 +151,7 @@ export function useLeaderboardFilters(
   }, [entries, enableClassGrouping])
 
   const effectiveSelectedClass = enableClassGrouping ? selectedClass : 'All'
+  const normalizedSearchQuery = normalizeSearchValue(searchQuery)
 
   // Filter and sort data
   const filtered = useMemo(() => {
@@ -131,11 +167,14 @@ export function useLeaderboardFilters(
       result = result.filter(e => isRegistered(e))
     }
 
+    // Filter by free-text query across driver/car/team fields.
+    result = result.filter(entry => matchesSearch(entry, normalizedSearchQuery))
+
     // Sort
     result.sort((left, right) => compareEntries(left, right, sortBy, sortAsc))
 
     return result
-  }, [entries, effectiveSelectedClass, sortBy, sortAsc, showRegisteredOnly, isRegistered, enableClassGrouping, enableParticipantsFiltering])
+  }, [entries, effectiveSelectedClass, sortBy, sortAsc, showRegisteredOnly, normalizedSearchQuery, isRegistered, enableClassGrouping, enableParticipantsFiltering])
 
   return {
     filtered,
@@ -149,5 +188,7 @@ export function useLeaderboardFilters(
     toggleSortDirection,
     showRegisteredOnly,
     setShowRegisteredOnly,
+    searchQuery,
+    setSearchQuery,
   }
 }

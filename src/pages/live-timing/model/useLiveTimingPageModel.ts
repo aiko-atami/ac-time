@@ -24,6 +24,8 @@ interface UseLiveTimingPageModelReturn {
   toggleSortDirection: () => void
   showRegisteredOnly: boolean
   setShowRegisteredOnly: (value: boolean) => void
+  searchQuery: string
+  setSearchQuery: (value: string) => void
   pacePercentThreshold: number
   isRegistered: (entry: ProcessedEntry) => boolean
 }
@@ -67,6 +69,8 @@ export function useLiveTimingPageModel(): UseLiveTimingPageModelReturn {
     toggleSortDirection,
     showRegisteredOnly,
     setShowRegisteredOnly,
+    searchQuery,
+    setSearchQuery,
   } = useLeaderboardFilters(
     data?.leaderboard ?? EMPTY_LEADERBOARD_ENTRIES,
     isRegistered,
@@ -88,6 +92,8 @@ export function useLiveTimingPageModel(): UseLiveTimingPageModelReturn {
     toggleSortDirection,
     showRegisteredOnly,
     setShowRegisteredOnly,
+    searchQuery,
+    setSearchQuery,
     pacePercentThreshold: threshold.pacePercentThreshold,
     isRegistered,
   }

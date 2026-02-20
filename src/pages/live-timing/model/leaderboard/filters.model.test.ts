@@ -2,6 +2,7 @@
 import { allSettled, fork } from 'effector'
 import { describe, expect, it } from 'vitest'
 import {
+  $searchQuery,
   $selectedClass,
   $showRegisteredOnly,
   $sortAsc,
@@ -9,6 +10,7 @@ import {
   classGroupingAvailabilityChanged,
   classSelected,
   registeredOnlySet,
+  searchQueryChanged,
   sortDirectionSet,
   sortDirectionToggleClicked,
   sortFieldSelected,
@@ -45,6 +47,17 @@ describe('filters.model', () => {
     const scope = fork()
     await allSettled(registeredOnlySet, { scope, params: true })
     expect(scope.getState($showRegisteredOnly)).toBe(true)
+  })
+
+  it('should keep empty search query by default', () => {
+    const scope = fork()
+    expect(scope.getState($searchQuery)).toBe('')
+  })
+
+  it('should update search query value', async () => {
+    const scope = fork()
+    await allSettled(searchQueryChanged, { scope, params: 'ferrari' })
+    expect(scope.getState($searchQuery)).toBe('ferrari')
   })
 
   it('should reset selected class to All when class grouping is disabled', async () => {

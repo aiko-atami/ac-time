@@ -7,6 +7,7 @@ const DEFAULT_SELECTED_CLASS = 'All'
 const DEFAULT_SORT_BY: SortField = 'lapTime'
 const DEFAULT_SORT_ASC = true
 const DEFAULT_SHOW_REGISTERED_ONLY = false
+const DEFAULT_SEARCH_QUERY = ''
 
 // User selected a specific car class filter value.
 export const classSelected = createEvent<string>()
@@ -20,6 +21,8 @@ export const sortDirectionToggleClicked = createEvent()
 export const registeredOnlySet = createEvent<boolean>()
 // Notify model that class grouping capability changed in active settings.
 export const classGroupingAvailabilityChanged = createEvent<boolean>()
+// User changed text query for leaderboard search.
+export const searchQueryChanged = createEvent<string>()
 
 // Current car class filter selected by user.
 export const $selectedClass = createStore<string>(DEFAULT_SELECTED_CLASS)
@@ -36,6 +39,10 @@ export const $sortAsc = createStore<boolean>(DEFAULT_SORT_ASC)
 // Whether "registered only" filter is currently enabled.
 export const $showRegisteredOnly = createStore<boolean>(DEFAULT_SHOW_REGISTERED_ONLY)
   .on(registeredOnlySet, (_, value) => value)
+
+// Current text query used for client-side leaderboard search.
+export const $searchQuery = createStore<string>(DEFAULT_SEARCH_QUERY)
+  .on(searchQueryChanged, (_, value) => value)
 
 // Declaratively invert sort direction on toggle click.
 sample({

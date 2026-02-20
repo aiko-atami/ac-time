@@ -82,6 +82,8 @@ interface LiveTimingContentProps {
   toggleSortDirection: () => void
   showRegisteredOnly: boolean
   setShowRegisteredOnly: (value: boolean) => void
+  searchQuery: string
+  setSearchQuery: (value: string) => void
   pacePercentThreshold: number
   isRegistered: (entry: ProcessedEntry) => boolean
 }
@@ -106,6 +108,8 @@ function LiveTimingContent(props: LiveTimingContentProps) {
     toggleSortDirection,
     showRegisteredOnly,
     setShowRegisteredOnly,
+    searchQuery,
+    setSearchQuery,
     pacePercentThreshold,
     isRegistered,
   } = props
@@ -147,6 +151,8 @@ function LiveTimingContent(props: LiveTimingContentProps) {
         onSortDirectionToggle={toggleSortDirection}
         showRegisteredOnly={showRegisteredOnly}
         onToggleRegisteredOnly={setShowRegisteredOnly}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
       />
 
       <Leaderboard
@@ -179,6 +185,8 @@ export function LiveTimingPage() {
     toggleSortDirection,
     showRegisteredOnly,
     setShowRegisteredOnly,
+    searchQuery,
+    setSearchQuery,
     pacePercentThreshold,
     isRegistered,
   } = useLiveTimingPageModel()
@@ -203,6 +211,8 @@ export function LiveTimingPage() {
           toggleSortDirection={toggleSortDirection}
           showRegisteredOnly={showRegisteredOnly}
           setShowRegisteredOnly={setShowRegisteredOnly}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
           pacePercentThreshold={pacePercentThreshold}
           isRegistered={isRegistered}
         />

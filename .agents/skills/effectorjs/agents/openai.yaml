@@ -1,5 +1,0 @@
-version: 1
-interface:
-  display_name: "EffectorJS"
-  short_description: "Design and refactor Effector state management with scope-safe SSR patterns"
-  default_prompt: "Use this skill to model, refactor, and validate Effector state management with modern v23+ patterns, including scope/SSR safety and React useUnit guidance."

@@ -12,9 +12,10 @@ interface Participant {
   car: string
 }
 
-interface NormalizedParticipant {
+export interface NormalizedParticipant {
   nameKey: string
   carClass: string
+  hasDeclaredCar: boolean
   carTokens: string[]
 }
 
@@ -84,7 +85,7 @@ function normalizeText(value: string): string {
  * @param value Driver name.
  * @returns Canonical key for matching.
  */
-function toNameKey(value: string): string {
+export function toNameKey(value: string): string {
   return normalizeText(value)
     .split(/\s+/)
     .filter(word => word.length > 0)
@@ -101,7 +102,7 @@ const CAR_TOKEN_STOPWORDS = new Set<string>([])
  * @param car Raw car name string.
  * @returns Normalized token array.
  */
-function toCarTokens(car: string): string[] {
+export function toCarTokens(car: string): string[] {
   return normalizeText(car)
     .split(/[\s\-_]+/)
     .filter((t) => {
@@ -116,13 +117,24 @@ function toCarTokens(car: string): string[] {
 }
 
 /**
+ * Checks whether participant declared a car in CSV.
+ * Empty value and "-" mean "car is not specified".
+ * @param value Raw CSV car value.
+ * @returns True when car value is usable for car matching.
+ */
+export function hasDeclaredCar(value: string): boolean {
+  const normalizedValue = value.trim()
+  return normalizedValue !== '' && normalizedValue !== '-'
+}
+
+/**
  * Checks if two car token arrays share at least `minOverlap` common tokens.
  * @param a First token array.
  * @param b Second token array.
  * @param minOverlap Minimum shared tokens required.
  * @returns True when overlap threshold met.
  */
-function hasCarTokenOverlap(a: string[], b: string[], minOverlap = 2): boolean {
+export function hasCarTokenOverlap(a: string[], b: string[], minOverlap = 2): boolean {
   if (a.length === 0 || b.length === 0)
     return false
   const setB = new Set(b)
@@ -135,6 +147,28 @@ function hasCarTokenOverlap(a: string[], b: string[], minOverlap = 2): boolean {
     }
   }
   return false
+}
+
+/**
+ * Matches a single participant candidate against leaderboard entry by class and car rules.
+ * When participant has no car in CSV, class match is enough.
+ * @param candidate Normalized participant candidate with same driver name.
+ * @param entryClass Normalized leaderboard class.
+ * @param entryCarTokens Normalized leaderboard car tokens.
+ * @returns True when candidate matches class/car constraints.
+ */
+export function matchesParticipantCandidate(
+  candidate: NormalizedParticipant,
+  entryClass: string,
+  entryCarTokens: string[],
+): boolean {
+  if (candidate.carClass !== entryClass)
+    return false
+
+  if (!candidate.hasDeclaredCar)
+    return true
+
+  return hasCarTokenOverlap(candidate.carTokens, entryCarTokens)
 }
 
 interface UseChampionshipParticipantsOptions {
@@ -224,6 +258,7 @@ export function useChampionshipParticipants(options: UseChampionshipParticipants
       return {
         nameKey,
         carClass: normalizeText(participant.carClass),
+        hasDeclaredCar: hasDeclaredCar(participant.car),
         carTokens: toCarTokens(participant.car),
       }
     })
@@ -261,7 +296,7 @@ export function useChampionshipParticipants(options: UseChampionshipParticipants
     const entryCarTokens = toCarTokens(entry.carName)
 
     return candidates.some(
-      p => p.carClass === entryClass && hasCarTokenOverlap(p.carTokens, entryCarTokens),
+      p => matchesParticipantCandidate(p, entryClass, entryCarTokens),
     )
   }, [matchByDriverNameOnly, normalizedParticipants.length, participantsByName])
 

@@ -267,7 +267,7 @@ export function SettingsPage() {
                   value={
                     serializePresetRef(presets.activePresetRef) ?? undefined
                   }
-                  onValueChange={(value) => {
+                  onValueChange={(value: string | null) => {
                     const presetRef = parsePresetRef(value)
                     if (presetRef) {
                       presets.selectPreset(presetRef)

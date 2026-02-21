@@ -1,6 +1,8 @@
 pre-commit:
-  parallel: true
+  parallel: false
   commands:
     biome:
       run: npx biome check --write --staged --files-ignore-unknown=true --no-errors-on-unmatched
       stage_fixed: true
+    typescript:
+      run: npx tsc -b --pretty false

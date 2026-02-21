@@ -11,7 +11,9 @@ import {
   InputGroupInput,
 } from '@/shared/ui/input-group'
 
-function Combobox({ ...props }: ComboboxPrimitive.Root.Props) {
+function Combobox<Value, Multiple extends boolean | undefined = false>({
+  ...props
+}: ComboboxPrimitive.Root.Props<Value, Multiple>) {
   return <ComboboxPrimitive.Root {...props} />
 }
 

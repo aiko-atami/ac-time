@@ -9,7 +9,9 @@ import {
 import * as React from 'react'
 import { cn } from '@/shared/lib/utils'
 
-function Select({ ...props }: SelectPrimitive.Root.Props) {
+function Select<Value, Multiple extends boolean | undefined = false>({
+  ...props
+}: SelectPrimitive.Root.Props<Value, Multiple>) {
   return <SelectPrimitive.Root {...props} />
 }
 

@@ -40,10 +40,10 @@ export function useLiveTimingPageModel(): UseLiveTimingPageModelReturn {
 
   const activeSettings = presets.activePreset?.settings ?? null
   const enableClassGrouping = (activeSettings?.carClasses.length ?? 0) > 0
-  const enableParticipantsFiltering = Boolean(activeSettings?.participants.csvUrl.trim())
+  const enableParticipantsFiltering = Boolean(activeSettings?.participantsCsvUrl.trim())
 
   const { isRegistered } = useChampionshipParticipants({
-    participantsCsvUrl: activeSettings?.participants.csvUrl,
+    participantsCsvUrl: activeSettings?.participantsCsvUrl,
     matchByDriverNameOnly: !enableClassGrouping,
   })
 

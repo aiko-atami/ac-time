@@ -1,5 +1,5 @@
 // Presets domain utilities: normalization, CRUD and clone naming.
-import type { CarClassRule, SettingsPreset, SettingsPresetsState, SettingsSnapshot } from '@/shared/types'
+import type { CarClassRule, PresetRef, SettingsPreset, SettingsPresetsState, SettingsSnapshot } from '@/shared/types'
 import {
   DEFAULT_CLASS_RULES,
   DEFAULT_PARTICIPANTS_CSV_URL,
@@ -7,7 +7,7 @@ import {
 } from '@/shared/config/constants'
 import { dedupeCarClassRules } from './serialize'
 
-const SETTINGS_PRESETS_VERSION = 1 as const
+const SETTINGS_PRESETS_VERSION = 2 as const
 
 /**
  * Creates a default settings snapshot.
@@ -17,9 +17,7 @@ export function createDefaultSettingsSnapshot(): SettingsSnapshot {
   return {
     serverUrl: DEFAULT_SERVER_URL,
     carClasses: [...DEFAULT_CLASS_RULES],
-    participants: {
-      csvUrl: DEFAULT_PARTICIPANTS_CSV_URL,
-    },
+    participantsCsvUrl: DEFAULT_PARTICIPANTS_CSV_URL,
   }
 }
 
@@ -30,7 +28,7 @@ export function createDefaultSettingsSnapshot(): SettingsSnapshot {
 export function createDefaultPresetsState(): SettingsPresetsState {
   return {
     version: SETTINGS_PRESETS_VERSION,
-    activePresetId: 'e4606c07-42c7-4ab1-86b9-639e1ddfd3ea',
+    activePresetRef: { source: 'user', id: 'e4606c07-42c7-4ab1-86b9-639e1ddfd3ea' },
     presets: [
       {
         id: '9d5388f6-2867-4cf5-801d-c883706d82c1',
@@ -38,9 +36,7 @@ export function createDefaultPresetsState(): SettingsPresetsState {
         settings: {
           serverUrl: 'https://ac7.yoklmnracing.ru/api/live-timings/leaderboard.json',
           carClasses: [],
-          participants: {
-            csvUrl: 'https://github.com/aiko-atami/ac-time/releases/download/championship-537/participants-537.csv',
-          },
+          participantsCsvUrl: 'https://github.com/aiko-atami/ac-time/releases/download/championship-537/participants-537.csv',
         },
       },
       {
@@ -62,9 +58,7 @@ export function createDefaultPresetsState(): SettingsPresetsState {
               patterns: ['LADA 2118 Concept C GT'],
             },
           ],
-          participants: {
-            csvUrl: 'https://github.com/aiko-atami/ac-time/releases/download/championship-537/participants-537.csv',
-          },
+          participantsCsvUrl: 'https://github.com/aiko-atami/ac-time/releases/download/championship-537/participants-537.csv',
         },
       },
       {
@@ -73,9 +67,7 @@ export function createDefaultPresetsState(): SettingsPresetsState {
         settings: {
           serverUrl: 'https://ac9.yoklmnracing.ru/api/live-timings/leaderboard.json',
           carClasses: [],
-          participants: {
-            csvUrl: 'https://github.com/aiko-atami/ac-time/releases/download/championship-538/participants-538.csv',
-          },
+          participantsCsvUrl: 'https://github.com/aiko-atami/ac-time/releases/download/championship-538/participants-538.csv',
         },
       },
     ],
@@ -93,7 +85,7 @@ export function normalizeState(value: unknown): SettingsPresetsState {
     return fallback
   }
 
-  const source = value as Partial<SettingsPresetsState>
+  const source = value as Partial<SettingsPresetsState> & { activePresetId?: unknown }
   const rawPresets = Array.isArray(source.presets) ? source.presets : []
   const presets = rawPresets
     .map(item => normalizePreset(item))
@@ -103,33 +95,33 @@ export function normalizeState(value: unknown): SettingsPresetsState {
     return fallback
   }
 
-  const activePresetId = typeof source.activePresetId === 'string'
-    && presets.some(preset => preset.id === source.activePresetId)
-    ? source.activePresetId
-    : presets[0].id
+  const activePresetRef = normalizeActivePresetRef(
+    source.activePresetRef,
+    source.activePresetId,
+    presets,
+  )
 
   return {
     version: SETTINGS_PRESETS_VERSION,
-    activePresetId,
+    activePresetRef,
     presets,
   }
 }
 
 /**
- * Selects active preset by id.
+ * Selects active preset reference.
  * @param state Source state.
- * @param presetId Target preset id.
- * @returns Updated state with active preset id.
+ * @param presetRef Target preset reference.
+ * @returns Updated state with active preset reference.
  */
-export function selectActivePreset(state: SettingsPresetsState, presetId: string): SettingsPresetsState {
-  const exists = state.presets.some(preset => preset.id === presetId)
-  if (!exists) {
+export function selectActivePresetRef(state: SettingsPresetsState, presetRef: PresetRef): SettingsPresetsState {
+  if (presetRef.source === 'user' && !state.presets.some(preset => preset.id === presetRef.id)) {
     return state
   }
 
   return {
     ...state,
-    activePresetId: presetId,
+    activePresetRef: presetRef,
   }
 }
 
@@ -154,7 +146,7 @@ export function createPreset(
   return {
     ...state,
     presets: [...state.presets, preset],
-    activePresetId: preset.id,
+    activePresetRef: { source: 'user', id: preset.id },
   }
 }
 
@@ -206,14 +198,14 @@ export function deletePreset(state: SettingsPresetsState, presetId: string): Set
     return state
   }
 
-  const activePresetId = state.activePresetId === presetId
-    ? presets[0]?.id ?? null
-    : state.activePresetId
+  const activePresetRef = state.activePresetRef?.source === 'user' && state.activePresetRef.id === presetId
+    ? (presets[0] ? { source: 'user' as const, id: presets[0].id } : null)
+    : state.activePresetRef
 
   return {
     ...state,
     presets,
-    activePresetId,
+    activePresetRef,
   }
 }
 
@@ -243,13 +235,20 @@ export function clonePreset(state: SettingsPresetsState, presetId: string): Sett
 }
 
 /**
- * Returns active preset from state.
+ * Returns active user preset from state.
  * @param state Presets state.
- * @returns Active preset or null.
+ * @returns Active user preset or null.
  */
-export function getActivePreset(state: SettingsPresetsState): SettingsPreset | null {
-  const active = state.presets.find(preset => preset.id === state.activePresetId)
-  return active ?? state.presets[0] ?? null
+export function getActiveUserPreset(state: SettingsPresetsState): SettingsPreset | null {
+  const activePresetRef = state.activePresetRef
+  if (activePresetRef?.source === 'user') {
+    const active = state.presets.find(preset => preset.id === activePresetRef.id)
+    if (active) {
+      return active
+    }
+  }
+
+  return state.presets[0] ?? null
 }
 
 /**
@@ -285,15 +284,19 @@ function normalizeSnapshot(snapshot: unknown): SettingsSnapshot {
     return defaults
   }
 
-  const source = snapshot as Partial<SettingsSnapshot>
-  const participants = source.participants
+  const source = snapshot as Partial<SettingsSnapshot> & {
+    participants?: { csvUrl?: unknown }
+    participantsCsvUrl?: unknown
+  }
+  const legacyParticipantsCsvUrl = source.participants?.csvUrl
 
   return {
     serverUrl: isValidHttpUrl(source.serverUrl) ? source.serverUrl : defaults.serverUrl,
     carClasses: normalizeCarClasses(source.carClasses),
-    participants: {
-      csvUrl: normalizeOptionalHttpUrl(participants?.csvUrl, defaults.participants.csvUrl),
-    },
+    participantsCsvUrl: normalizeOptionalHttpUrl(
+      source.participantsCsvUrl ?? legacyParticipantsCsvUrl,
+      defaults.participantsCsvUrl,
+    ),
   }
 }
 
@@ -380,6 +383,42 @@ function normalizePresetName(value: unknown): string {
   }
 
   return trimmed.slice(0, 64)
+}
+
+/**
+ * Normalizes active preset reference from v2 and legacy v1 fields.
+ * @param activePresetRef Current v2 ref value.
+ * @param activePresetId Legacy v1 active preset id.
+ * @param presets Known user presets.
+ * @returns Safe active preset reference.
+ */
+function normalizeActivePresetRef(
+  activePresetRef: unknown,
+  activePresetId: unknown,
+  presets: SettingsPreset[],
+): PresetRef {
+  if (activePresetRef && typeof activePresetRef === 'object') {
+    const source = (activePresetRef as Partial<PresetRef>).source
+    const id = (activePresetRef as Partial<PresetRef>).id
+    if ((source === 'official' || source === 'user') && typeof id === 'string' && id.trim()) {
+      if (source === 'official') {
+        return { source, id }
+      }
+
+      if (presets.some(preset => preset.id === id)) {
+        return { source, id }
+      }
+    }
+  }
+
+  if (typeof activePresetId === 'string' && presets.some(preset => preset.id === activePresetId)) {
+    return { source: 'user', id: activePresetId }
+  }
+
+  return {
+    source: 'user',
+    id: presets[0].id,
+  }
 }
 
 /**

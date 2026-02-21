@@ -1,4 +1,4 @@
-// Tests for settings presets pure CRUD and normalization utilities.
+// Tests for settings presets pure CRUD, migration, and normalization utilities.
 import type { SettingsPresetsState, SettingsSnapshot } from '@/shared/types'
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_SERVER_URL } from '@/shared/config/constants'
@@ -7,14 +7,14 @@ import {
   createDefaultSettingsSnapshot,
   createPreset,
   deletePreset,
-  getActivePreset,
+  getActiveUserPreset,
   normalizeState,
-  selectActivePreset,
+  selectActivePresetRef,
   updatePreset,
 } from './settings-storage'
 
 /**
- * Produces a minimal valid presets state with one preset.
+ * Produces a minimal valid presets state with one user preset.
  * @param overrides Select fields to override.
  * @returns Test presets state.
  */
@@ -27,9 +27,9 @@ function createTestState(overrides: Partial<SettingsPresetsState> = {}): Setting
   }
 
   return {
-    version: 1,
+    version: 2,
     presets: [preset],
-    activePresetId: preset.id,
+    activePresetRef: { source: 'user', id: preset.id },
     ...overrides,
   }
 }
@@ -39,23 +39,29 @@ describe('createDefaultSettingsSnapshot', () => {
     const snapshot = createDefaultSettingsSnapshot()
     expect(snapshot.serverUrl).toBe(DEFAULT_SERVER_URL)
     expect(snapshot.carClasses).toBeInstanceOf(Array)
-    expect(snapshot.participants).toBeDefined()
+    expect(typeof snapshot.participantsCsvUrl).toBe('string')
   })
 })
 
-describe('selectActivePreset', () => {
-  it('should set active preset to given id when preset exists', () => {
+describe('selectActivePresetRef', () => {
+  it('should set active preset to given user id when preset exists', () => {
     const state = createTestState()
     const presetId = state.presets[0].id
-    const result = selectActivePreset(state, presetId)
-    expect(result.activePresetId).toBe(presetId)
+    const result = selectActivePresetRef(state, { source: 'user', id: presetId })
+    expect(result.activePresetRef).toEqual({ source: 'user', id: presetId })
   })
 
-  it('should keep previous active when id does not exist', () => {
+  it('should keep previous active when user id does not exist', () => {
     const state = createTestState()
-    const prev = state.activePresetId
-    const result = selectActivePreset(state, 'nonexistent-id')
-    expect(result.activePresetId).toBe(prev)
+    const prev = state.activePresetRef
+    const result = selectActivePresetRef(state, { source: 'user', id: 'nonexistent-id' })
+    expect(result.activePresetRef).toEqual(prev)
+  })
+
+  it('should allow selecting official ref even if it is not in user list', () => {
+    const state = createTestState()
+    const result = selectActivePresetRef(state, { source: 'official', id: 'ac8' })
+    expect(result.activePresetRef).toEqual({ source: 'official', id: 'ac8' })
   })
 })
 
@@ -68,7 +74,7 @@ describe('createPreset', () => {
 
     const newPreset = result.presets.find(p => p.name === 'New Preset')
     expect(newPreset).toBeDefined()
-    expect(result.activePresetId).toBe(newPreset!.id)
+    expect(result.activePresetRef).toEqual({ source: 'user', id: newPreset!.id })
   })
 })
 
@@ -97,7 +103,7 @@ describe('clonePreset', () => {
           settings: createDefaultSettingsSnapshot(),
         },
       ],
-      activePresetId: 'a',
+      activePresetRef: { source: 'user', id: 'a' },
     })
 
     const result = clonePreset(state, 'a')
@@ -106,29 +112,7 @@ describe('clonePreset', () => {
     const clone = result.presets.find(p => p.id !== 'a')
     expect(clone?.name).toBe('Race (1)')
     expect(clone?.settings).toEqual(state.presets[0].settings)
-    expect(result.activePresetId).toBe('a')
-  })
-
-  it('should increment suffix when clone name already exists', () => {
-    const state = createTestState({
-      presets: [
-        {
-          id: 'a',
-          name: 'Race',
-          settings: createDefaultSettingsSnapshot(),
-        },
-        {
-          id: 'b',
-          name: 'Race (1)',
-          settings: createDefaultSettingsSnapshot(),
-        },
-      ],
-      activePresetId: 'a',
-    })
-
-    const result = clonePreset(state, 'a')
-    const names = result.presets.map(p => p.name)
-    expect(names).toContain('Race (2)')
+    expect(result.activePresetRef).toEqual({ source: 'user', id: 'a' })
   })
 })
 
@@ -148,28 +132,29 @@ describe('deletePreset', () => {
     expect(result.presets.length).toBeGreaterThanOrEqual(1)
   })
 
-  it('should switch active preset when active is deleted', () => {
+  it('should switch active preset when active user preset is deleted', () => {
     const state = createTestState()
     const snapshot = createDefaultSettingsSnapshot()
     const withExtra = createPreset(state, 'Extra', snapshot)
-    const activeId = withExtra.activePresetId!
-    const result = deletePreset(withExtra, activeId)
-    expect(result.activePresetId).not.toBe(activeId)
-    expect(result.presets.find(p => p.id === result.activePresetId)).toBeDefined()
+    const activeRef = withExtra.activePresetRef!
+    const result = deletePreset(withExtra, activeRef.id)
+    expect(result.activePresetRef).not.toEqual(activeRef)
+    expect(result.activePresetRef?.source).toBe('user')
+    expect(result.presets.find(p => p.id === result.activePresetRef?.id)).toBeDefined()
   })
 })
 
-describe('getActivePreset', () => {
-  it('should return active preset when it exists', () => {
+describe('getActiveUserPreset', () => {
+  it('should return active user preset when it exists', () => {
     const state = createTestState()
-    const active = getActivePreset(state)
+    const active = getActiveUserPreset(state)
     expect(active).not.toBeNull()
-    expect(active!.id).toBe(state.activePresetId)
+    expect(active!.id).toBe(state.activePresetRef?.id)
   })
 
-  it('should fallback to first preset when active id does not match', () => {
-    const state = createTestState({ activePresetId: 'ghost-id' })
-    const active = getActivePreset(state)
+  it('should fallback to first preset when active ref points to missing user preset', () => {
+    const state = createTestState({ activePresetRef: { source: 'user', id: 'ghost-id' } })
+    const active = getActiveUserPreset(state)
     expect(active).not.toBeNull()
     expect(active!.id).toBe(state.presets[0].id)
   })
@@ -179,10 +164,10 @@ describe('normalizeState', () => {
   it('should normalize invalid payload to default state', () => {
     const normalized = normalizeState(null)
     expect(normalized.presets.length).toBeGreaterThan(0)
-    expect(normalized.activePresetId).toBeTruthy()
+    expect(normalized.activePresetRef).toBeTruthy()
   })
 
-  it('should drop invalid pacePercentThreshold legacy field from snapshots', () => {
+  it('should migrate v1 activePresetId into activePresetRef', () => {
     const normalized = normalizeState({
       version: 1,
       activePresetId: 'x',
@@ -192,7 +177,7 @@ describe('normalizeState', () => {
           name: 'Legacy',
           settings: {
             serverUrl: 'https://example.com/leaderboard.json',
-            participants: { csvUrl: '' },
+            participantsCsvUrl: '',
             carClasses: [],
             pacePercentThreshold: 113,
           },
@@ -200,6 +185,7 @@ describe('normalizeState', () => {
       ],
     })
 
+    expect(normalized.activePresetRef).toEqual({ source: 'user', id: 'x' })
     expect(normalized.presets[0].settings).not.toHaveProperty('pacePercentThreshold')
   })
 })

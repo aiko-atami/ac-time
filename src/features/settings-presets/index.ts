@@ -1,8 +1,14 @@
 // Public API for settings presets feature model.
 export {
+  $officialPresetsLoading,
+  $officialPresetsSyncStatus,
+  officialPresetsSyncRequested as requestSyncOfficialPresets,
+} from './model/official-presets.model'
+export {
   $activePreset,
-  $activePresetId,
-  $presets,
+  $activePresetRef,
+  $presetGroups,
+  $presetItems,
   presetCloned,
   presetCreated,
   presetDeleted,

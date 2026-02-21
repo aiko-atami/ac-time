@@ -58,7 +58,7 @@ describe('presets.model persistence', () => {
 
     await allSettled(model.presetCloned, {
       scope,
-      params: sourcePresetId!,
+      params: { source: 'user', id: sourcePresetId! },
     })
 
     const persistedRaw = localStorage.getItem(SETTINGS_PRESETS_STORAGE_KEY)
@@ -67,5 +67,32 @@ describe('presets.model persistence', () => {
     const persistedState = JSON.parse(persistedRaw!)
     expect(persistedState.presets.length).toBe(initialState.presets.length + 1)
     expect(persistedState.presets.some((preset: { name: string }) => /\(\d+\)$/.test(preset.name))).toBe(true)
+  })
+
+  it('clones official preset into user presets', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify([
+      {
+        name: 'Official AC',
+        settings: {
+          serverUrl: 'https://official.test/leaderboard.json',
+          participantsCsvUrl: '',
+          carClasses: [],
+        },
+      },
+    ]), { status: 200 })))
+
+    const model = await import('./presets.model')
+    const officialModel = await import('./official-presets.model')
+    const scope = fork()
+
+    await allSettled(officialModel.officialPresetsSyncRequested, { scope })
+    await allSettled(model.presetCloned, {
+      scope,
+      params: { source: 'official', id: 'official ac' },
+    })
+
+    const state = scope.getState(model.$presetsState)
+    expect(state.presets.some(preset => preset.name === 'Official AC')).toBe(true)
+    expect(state.activePresetRef?.source).toBe('user')
   })
 })

@@ -1,7 +1,7 @@
 // Settings page with active preset selection, global threshold and presets list management.
-import type { SettingsPreset, SettingsSnapshot } from '@/shared/types'
+import type { PresetRef, ResolvedPreset, SettingsPreset, SettingsSnapshot } from '@/shared/types'
 import { Link } from '@argon-router/react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   formatCarClasses,
   parseCarClasses,
@@ -40,7 +40,9 @@ import { Label } from '@/shared/ui/label'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
@@ -50,9 +52,7 @@ import { SettingsFormFields } from './SettingsFormFields'
 const EMPTY_SETTINGS: SettingsSnapshot = {
   serverUrl: '',
   carClasses: [],
-  participants: {
-    csvUrl: '',
-  },
+  participantsCsvUrl: '',
 }
 
 type PresetDialogMode = 'create' | 'edit'
@@ -69,9 +69,10 @@ interface PresetDraft {
  * @returns Settings page component.
  */
 export function SettingsPage() {
-  const { success } = useToast()
+  const { error, info, success } = useToast()
   const presets = useSettingsPresets()
   const threshold = useSettingsThreshold()
+  const lastSyncToastStatusRef = useRef<string | null>(null)
 
   const [presetDialogOpen, setPresetDialogOpen] = useState(false)
   const [presetDialogMode, setPresetDialogMode] = useState<PresetDialogMode>('edit')
@@ -82,7 +83,7 @@ export function SettingsPage() {
     return {
       name: presets.activePreset?.name ?? 'Preset',
       serverUrl: activeSettings.serverUrl,
-      participantsCsvUrl: activeSettings.participants.csvUrl,
+      participantsCsvUrl: activeSettings.participantsCsvUrl,
       classesCsv: formatCarClasses(activeSettings.carClasses),
     }
   })
@@ -91,7 +92,7 @@ export function SettingsPage() {
   const participantsCsvUrlError = validateOptionalHttpUrl(presetDraft.participantsCsvUrl)
   const presetNameError = validatePresetName({
     value: presetDraft.name,
-    presets: presets.presets,
+    presets: presets.userPresets,
     mode: presetDialogMode,
     editedPresetId: editingPresetId,
   })
@@ -108,9 +109,9 @@ export function SettingsPage() {
     setPresetDialogMode('create')
     setEditingPresetId(null)
     setPresetDraft({
-      name: buildNewPresetName(presets.presets),
+      name: buildNewPresetName(presets.userPresets),
       serverUrl: sourceSettings.serverUrl,
-      participantsCsvUrl: sourceSettings.participants.csvUrl,
+      participantsCsvUrl: sourceSettings.participantsCsvUrl,
       classesCsv: formatCarClasses(sourceSettings.carClasses),
     })
     setPresetDialogOpen(true)
@@ -126,7 +127,7 @@ export function SettingsPage() {
     setPresetDraft({
       name: preset.name,
       serverUrl: preset.settings.serverUrl,
-      participantsCsvUrl: preset.settings.participants.csvUrl,
+      participantsCsvUrl: preset.settings.participantsCsvUrl,
       classesCsv: formatCarClasses(preset.settings.carClasses),
     })
     setPresetDialogOpen(true)
@@ -176,7 +177,7 @@ export function SettingsPage() {
    * @param presetId Preset id to clone.
    */
   const handleClonePreset = (presetId: string) => {
-    presets.clonePresetById(presetId)
+    presets.clonePresetByRef({ source: 'user', id: presetId })
     success('Preset cloned.')
   }
 
@@ -188,11 +189,32 @@ export function SettingsPage() {
     if (!deletePresetId) {
       return ''
     }
-    return presets.presets.find(preset => preset.id === deletePresetId)?.name ?? ''
-  }, [deletePresetId, presets.presets])
+    return presets.userPresets.find(preset => preset.id === deletePresetId)?.name ?? ''
+  }, [deletePresetId, presets.userPresets])
   const activePresetName = useMemo(() => {
-    return presets.presets.find(preset => preset.id === presets.activePresetId)?.name ?? 'Select preset'
-  }, [presets.activePresetId, presets.presets])
+    return presets.presetItems.find(item => presetRefEquals(item.ref, presets.activePresetRef))?.preset.name ?? 'Select preset'
+  }, [presets.activePresetRef, presets.presetItems])
+
+  useEffect(() => {
+    const syncStatus = presets.officialSyncStatus
+    if (syncStatus === lastSyncToastStatusRef.current) {
+      return
+    }
+
+    if (syncStatus === 'fallback') {
+      info('Official presets update failed. Using cached official presets.')
+      lastSyncToastStatusRef.current = syncStatus
+      return
+    }
+
+    if (syncStatus === 'error') {
+      error('Official presets are temporarily unavailable.')
+      lastSyncToastStatusRef.current = syncStatus
+      return
+    }
+
+    lastSyncToastStatusRef.current = null
+  }, [presets.officialSyncStatus, error, info])
 
   return (
     <div className="min-h-screen relative">
@@ -215,8 +237,13 @@ export function SettingsPage() {
               <div className="grid gap-2">
                 <Label id="preset-select-label">Select active preset</Label>
                 <Select
-                  value={presets.activePresetId ?? undefined}
-                  onValueChange={value => value && presets.selectPreset(value)}
+                  value={serializePresetRef(presets.activePresetRef) ?? undefined}
+                  onValueChange={(value) => {
+                    const presetRef = parsePresetRef(value)
+                    if (presetRef) {
+                      presets.selectPreset(presetRef)
+                    }
+                  }}
                 >
                   <SelectTrigger aria-labelledby="preset-select-label" className="w-full">
                     <SelectValue placeholder="Select preset">
@@ -224,11 +251,22 @@ export function SettingsPage() {
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {presets.presets.map(preset => (
-                      <SelectItem key={preset.id} value={preset.id}>
-                        {preset.name}
-                      </SelectItem>
-                    ))}
+                    <SelectGroup>
+                      <SelectLabel>Official</SelectLabel>
+                      {presets.presetGroups.official.map(item => (
+                        <SelectItem key={serializePresetRef(item.ref)!} value={serializePresetRef(item.ref)!}>
+                          {item.preset.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel>Your presets</SelectLabel>
+                      {presets.presetGroups.user.map(item => (
+                        <SelectItem key={serializePresetRef(item.ref)!} value={serializePresetRef(item.ref)!}>
+                          {item.preset.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>
@@ -266,27 +304,15 @@ export function SettingsPage() {
               </CardAction>
             </CardHeader>
             <CardContent className="grid gap-2 py-4">
-              {presets.presets.map(preset => (
-                <div key={preset.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3">
-                  <p className="font-medium">{preset.name}</p>
-                  <div className="flex flex-wrap gap-2">
-                    <Button type="button" size="sm" variant="outline" onClick={() => openEditDialog(preset)}>
-                      Edit
-                    </Button>
-                    <Button type="button" size="sm" variant="outline" onClick={() => handleClonePreset(preset.id)}>
-                      Clone
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => setDeletePresetId(preset.id)}
-                      disabled={presets.presets.length <= 1}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </div>
+              {presets.presetGroups.user.map(item => (
+                <PresetRow
+                  key={serializePresetRef(item.ref)!}
+                  item={item}
+                  canDelete={presets.userPresets.length > 1}
+                  onEdit={() => openEditDialog(item.preset)}
+                  onClone={() => handleClonePreset(item.ref.id)}
+                  onDelete={() => setDeletePresetId(item.ref.id)}
+                />
               ))}
             </CardContent>
           </Card>
@@ -353,7 +379,7 @@ export function SettingsPage() {
             <AlertDialogAction
               variant="destructive"
               onClick={handleDeletePreset}
-              disabled={presets.presets.length <= 1}
+              disabled={presets.userPresets.length <= 1}
             >
               Delete
             </AlertDialogAction>
@@ -503,9 +529,111 @@ function buildDraftSnapshot(
 ): SettingsSnapshot {
   return {
     serverUrl: serverUrl.trim(),
-    participants: {
-      csvUrl: participantsCsvUrl.trim(),
-    },
+    participantsCsvUrl: participantsCsvUrl.trim(),
     carClasses: parseCarClasses(classesCsv),
   }
+}
+
+interface PresetRowProps {
+  item: ResolvedPreset
+  canDelete: boolean
+  onEdit?: () => void
+  onClone: () => void
+  onDelete?: () => void
+}
+
+/**
+ * Renders one preset row with source-specific action set.
+ * @param props Row props.
+ * @param props.item Preset metadata and source details.
+ * @param props.canDelete Whether delete action is currently allowed.
+ * @param props.onEdit Optional edit callback for user presets.
+ * @param props.onClone Clone callback for preset row.
+ * @param props.onDelete Optional delete callback for user presets.
+ * @returns Preset actions row.
+ */
+function PresetRow({
+  item,
+  canDelete,
+  onEdit,
+  onClone,
+  onDelete,
+}: PresetRowProps) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="font-medium">{item.preset.name}</p>
+        <span className="rounded-md border px-2 py-0.5 text-[11px] text-muted-foreground">
+          {item.source === 'official' ? 'Official' : 'User'}
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {!item.readOnly && onEdit && (
+          <Button type="button" size="sm" variant="outline" onClick={onEdit}>
+            Edit
+          </Button>
+        )}
+        <Button type="button" size="sm" variant="outline" onClick={onClone}>
+          Clone
+        </Button>
+        {!item.readOnly && onDelete && (
+          <Button
+            type="button"
+            size="sm"
+            variant="destructive"
+            onClick={onDelete}
+            disabled={!canDelete}
+          >
+            Delete
+          </Button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Serializes source-aware preset ref for Select value field.
+ * @param presetRef Source-aware preset ref.
+ * @returns String value or null.
+ */
+function serializePresetRef(presetRef: PresetRef | null): string | null {
+  if (!presetRef) {
+    return null
+  }
+
+  return `${presetRef.source}:${presetRef.id}`
+}
+
+/**
+ * Parses Select value into source-aware preset ref.
+ * @param value Select value.
+ * @returns Parsed preset ref or null.
+ */
+function parsePresetRef(value: string | null): PresetRef | null {
+  if (!value) {
+    return null
+  }
+
+  const [source, ...idParts] = value.split(':')
+  const id = idParts.join(':').trim()
+  if (!id || (source !== 'official' && source !== 'user')) {
+    return null
+  }
+
+  return { source, id }
+}
+
+/**
+ * Checks whether two source-aware references are equal.
+ * @param left Left ref.
+ * @param right Right ref.
+ * @returns True when source and id are equal.
+ */
+function presetRefEquals(left: PresetRef | null, right: PresetRef | null): boolean {
+  if (!left || !right) {
+    return false
+  }
+
+  return left.source === right.source && left.id === right.id
 }

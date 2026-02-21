@@ -1,9 +1,12 @@
-// React facade for settings presets Effector model.
-import type { SettingsPreset, SettingsSnapshot } from '@/shared/types'
+// React facade for merged official/user settings presets Effector model.
+import type { PresetRef, ResolvedPreset, SettingsPreset, SettingsSnapshot } from '@/shared/types'
 import { useUnit } from 'effector-react'
+import { $officialPresetsSyncStatus } from './official-presets.model'
 import {
   $activePreset,
-  $activePresetId,
+  $activePresetRef,
+  $presetGroups,
+  $presetItems,
   $presets,
   presetCloned,
   presetCreated,
@@ -13,34 +16,46 @@ import {
 } from './presets.model'
 
 interface UseSettingsPresetsReturn {
-  presets: SettingsPreset[]
-  activePresetId: string | null
+  userPresets: SettingsPreset[]
+  presetGroups: {
+    official: ResolvedPreset[]
+    user: ResolvedPreset[]
+  }
+  presetItems: ResolvedPreset[]
+  activePresetRef: PresetRef | null
   activePreset: SettingsPreset | null
-  selectPreset: (presetId: string) => void
+  officialSyncStatus: 'idle' | 'success' | 'fallback' | 'error'
+  selectPreset: (presetRef: PresetRef) => void
   createNewPreset: (settings: SettingsSnapshot, name: string) => void
   updatePresetById: (presetId: string, settings: SettingsSnapshot, name: string) => void
   deletePresetById: (presetId: string) => void
-  clonePresetById: (presetId: string) => void
+  clonePresetByRef: (presetRef: PresetRef) => void
 }
 
 /**
- * Exposes presets state and domain actions for React components.
- * @returns Presets store slice and handlers.
+ * Exposes merged presets state and domain actions for React components.
+ * @returns Presets store slices and handlers.
  */
 export function useSettingsPresets(): UseSettingsPresetsReturn {
   const {
-    presets,
+    userPresets,
+    presetGroups,
+    presetItems,
     activePreset,
-    activePresetId,
+    activePresetRef,
+    officialSyncStatus,
     selectPreset,
     createPreset,
     updatePreset,
     deletePreset,
     clonePreset,
   } = useUnit({
-    presets: $presets,
+    userPresets: $presets,
+    presetGroups: $presetGroups,
+    presetItems: $presetItems,
     activePreset: $activePreset,
-    activePresetId: $activePresetId,
+    activePresetRef: $activePresetRef,
+    officialSyncStatus: $officialPresetsSyncStatus,
     selectPreset: presetSelected,
     createPreset: presetCreated,
     updatePreset: presetUpdated,
@@ -49,13 +64,16 @@ export function useSettingsPresets(): UseSettingsPresetsReturn {
   })
 
   return {
-    presets,
+    userPresets,
+    presetGroups,
+    presetItems,
     activePreset,
-    activePresetId,
+    activePresetRef,
+    officialSyncStatus,
     selectPreset,
     createNewPreset: (settings, name) => createPreset({ settings, name }),
     updatePresetById: (presetId, settings, name) => updatePreset({ presetId, settings, name }),
     deletePresetById: deletePreset,
-    clonePresetById: clonePreset,
+    clonePresetByRef: clonePreset,
   }
 }

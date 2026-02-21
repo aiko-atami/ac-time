@@ -10,6 +10,9 @@ export const LEGACY_PARTICIPANTS_CSV_URL_KEY = 'ac-time-participants-csv-url'
 export const LEGACY_SETTINGS_PRESETS_STORAGE_KEY = 'ac-time-settings-presets'
 export const SETTINGS_PRESETS_STORAGE_KEY = 'settings-presets'
 export const SETTINGS_THRESHOLD_STORAGE_KEY = 'settings-threshold'
+export const OFFICIAL_PRESETS_CACHE_STORAGE_KEY = 'official-presets-cache-v1'
+export const OFFICIAL_PRESETS_URL = 'https://raw.githubusercontent.com/aiko-atami/ac-time/main/data/official-presets.json'
+export const OFFICIAL_PRESETS_SYNC_TTL_MS = 60 * 60 * 1000
 
 export const DEFAULT_CLASS_RULES: CarClassRule[] = [
   { name: 'Silver', patterns: ['SUPER-PRODUCTION'] },

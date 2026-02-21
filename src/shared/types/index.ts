@@ -74,14 +74,10 @@ export interface ServerInfo {
   sessionName?: string
 }
 
-export interface ParticipantSourceConfig {
-  csvUrl: string
-}
-
 export interface SettingsSnapshot {
   serverUrl: string
   carClasses: CarClassRule[]
-  participants: ParticipantSourceConfig
+  participantsCsvUrl: string
 }
 
 export interface GlobalSettingsSnapshot {
@@ -94,8 +90,22 @@ export interface SettingsPreset {
   settings: SettingsSnapshot
 }
 
+export type PresetSource = 'official' | 'user'
+
+export interface PresetRef {
+  source: PresetSource
+  id: string
+}
+
+export interface ResolvedPreset {
+  ref: PresetRef
+  source: PresetSource
+  preset: SettingsPreset
+  readOnly: boolean
+}
+
 export interface SettingsPresetsState {
-  version: 1
-  activePresetId: string | null
+  version: 2
+  activePresetRef: PresetRef | null
   presets: SettingsPreset[]
 }

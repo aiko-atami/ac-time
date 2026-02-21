@@ -2,7 +2,7 @@
 import type { historyAdapter } from '@argon-router/core'
 import { createEvent, sample } from 'effector'
 import { router } from '@/app/router'
-import { pickupPresetsPersistence } from '@/features/settings-presets'
+import { pickupPresetsPersistence, requestSyncOfficialPresets } from '@/features/settings-presets'
 import { pickupThresholdPersistence } from '@/features/settings-threshold'
 
 export interface AppStartedPayload {
@@ -16,6 +16,7 @@ sample({
   clock: appStarted,
   fn: () => undefined,
   target: [
+    requestSyncOfficialPresets,
     pickupPresetsPersistence,
     pickupThresholdPersistence,
   ],

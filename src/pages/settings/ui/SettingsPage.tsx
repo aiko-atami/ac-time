@@ -1,5 +1,5 @@
 // Settings page with active preset selection, global threshold and presets list management.
-import type { PresetRef, ResolvedPreset, SettingsPreset, SettingsSnapshot } from '@/shared/types'
+
 import { Link } from '@argon-router/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -15,6 +15,12 @@ import {
   MIN_PACE_PERCENT_THRESHOLD,
 } from '@/shared/config/constants'
 import { routes } from '@/shared/routing'
+import type {
+  PresetRef,
+  ResolvedPreset,
+  SettingsPreset,
+  SettingsSnapshot,
+} from '@/shared/types'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,7 +33,13 @@ import {
 } from '@/shared/ui/alert-dialog'
 import { Button } from '@/shared/ui/button'
 import { buttonVariants } from '@/shared/ui/button-variants'
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/shared/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -46,7 +58,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import { useToast } from '@/shared/ui/toast'
+import { useToast } from '@/shared/ui/use-toast'
 import { SettingsFormFields } from './SettingsFormFields'
 
 const EMPTY_SETTINGS: SettingsSnapshot = {
@@ -75,7 +87,8 @@ export function SettingsPage() {
   const lastSyncToastStatusRef = useRef<string | null>(null)
 
   const [presetDialogOpen, setPresetDialogOpen] = useState(false)
-  const [presetDialogMode, setPresetDialogMode] = useState<PresetDialogMode>('edit')
+  const [presetDialogMode, setPresetDialogMode] =
+    useState<PresetDialogMode>('edit')
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null)
   const [deletePresetId, setDeletePresetId] = useState<string | null>(null)
   const [presetDraft, setPresetDraft] = useState<PresetDraft>(() => {
@@ -89,7 +102,9 @@ export function SettingsPage() {
   })
 
   const serverUrlError = validateRequiredHttpUrl(presetDraft.serverUrl)
-  const participantsCsvUrlError = validateOptionalHttpUrl(presetDraft.participantsCsvUrl)
+  const participantsCsvUrlError = validateOptionalHttpUrl(
+    presetDraft.participantsCsvUrl,
+  )
   const presetNameError = validatePresetName({
     value: presetDraft.name,
     presets: presets.userPresets,
@@ -98,8 +113,11 @@ export function SettingsPage() {
   })
   const classesHints = buildCarClassesHints(presetDraft.classesCsv)
 
-  const canSavePreset = !serverUrlError && !participantsCsvUrlError && !presetNameError
-    && (presetDialogMode === 'create' || Boolean(editingPresetId))
+  const canSavePreset =
+    !serverUrlError &&
+    !participantsCsvUrlError &&
+    !presetNameError &&
+    (presetDialogMode === 'create' || Boolean(editingPresetId))
 
   /**
    * Opens create preset dialog using active preset settings as a starting point.
@@ -150,8 +168,7 @@ export function SettingsPage() {
     if (presetDialogMode === 'create') {
       presets.createNewPreset(nextSnapshot, presetDraft.name)
       success('Preset created.')
-    }
-    else if (editingPresetId) {
+    } else if (editingPresetId) {
       presets.updatePresetById(editingPresetId, nextSnapshot, presetDraft.name)
       success('Preset saved.')
     }
@@ -189,10 +206,17 @@ export function SettingsPage() {
     if (!deletePresetId) {
       return ''
     }
-    return presets.userPresets.find(preset => preset.id === deletePresetId)?.name ?? ''
+    return (
+      presets.userPresets.find((preset) => preset.id === deletePresetId)
+        ?.name ?? ''
+    )
   }, [deletePresetId, presets.userPresets])
   const activePresetName = useMemo(() => {
-    return presets.presetItems.find(item => presetRefEquals(item.ref, presets.activePresetRef))?.preset.name ?? 'Select preset'
+    return (
+      presets.presetItems.find((item) =>
+        presetRefEquals(item.ref, presets.activePresetRef),
+      )?.preset.name ?? 'Select preset'
+    )
   }, [presets.activePresetRef, presets.presetItems])
 
   useEffect(() => {
@@ -223,7 +247,10 @@ export function SettingsPage() {
           <div className="min-w-0">
             <h1 className="text-2xl font-bold sm:text-3xl">Settings</h1>
           </div>
-          <Link to={routes.liveTiming} className={buttonVariants({ variant: 'outline' })}>
+          <Link
+            to={routes.liveTiming}
+            className={buttonVariants({ variant: 'outline' })}
+          >
             Back
           </Link>
         </header>
@@ -237,7 +264,9 @@ export function SettingsPage() {
               <div className="grid gap-2">
                 <Label id="preset-select-label">Select active preset</Label>
                 <Select
-                  value={serializePresetRef(presets.activePresetRef) ?? undefined}
+                  value={
+                    serializePresetRef(presets.activePresetRef) ?? undefined
+                  }
                   onValueChange={(value) => {
                     const presetRef = parsePresetRef(value)
                     if (presetRef) {
@@ -245,7 +274,10 @@ export function SettingsPage() {
                     }
                   }}
                 >
-                  <SelectTrigger aria-labelledby="preset-select-label" className="w-full">
+                  <SelectTrigger
+                    aria-labelledby="preset-select-label"
+                    className="w-full"
+                  >
                     <SelectValue placeholder="Select preset">
                       {activePresetName}
                     </SelectValue>
@@ -253,16 +285,22 @@ export function SettingsPage() {
                   <SelectContent>
                     <SelectGroup>
                       <SelectLabel>Official</SelectLabel>
-                      {presets.presetGroups.official.map(item => (
-                        <SelectItem key={serializePresetRef(item.ref)!} value={serializePresetRef(item.ref)!}>
+                      {presets.presetGroups.official.map((item) => (
+                        <SelectItem
+                          key={serializePresetRef(item.ref)!}
+                          value={serializePresetRef(item.ref)!}
+                        >
                           {item.preset.name}
                         </SelectItem>
                       ))}
                     </SelectGroup>
                     <SelectGroup>
                       <SelectLabel>Your presets</SelectLabel>
-                      {presets.presetGroups.user.map(item => (
-                        <SelectItem key={serializePresetRef(item.ref)!} value={serializePresetRef(item.ref)!}>
+                      {presets.presetGroups.user.map((item) => (
+                        <SelectItem
+                          key={serializePresetRef(item.ref)!}
+                          value={serializePresetRef(item.ref)!}
+                        >
                           {item.preset.name}
                         </SelectItem>
                       ))}
@@ -282,13 +320,23 @@ export function SettingsPage() {
                   max={MAX_PACE_PERCENT_THRESHOLD}
                   step={1}
                   value={threshold.pacePercentThresholdInput}
-                  onChange={event => threshold.setPacePercentThresholdInput(event.target.value)}
+                  onChange={(event) =>
+                    threshold.setPacePercentThresholdInput(event.target.value)
+                  }
                   onBlur={threshold.commitPacePercentThreshold}
                   aria-invalid={Boolean(threshold.pacePercentThresholdError)}
-                  aria-describedby={threshold.pacePercentThresholdError ? 'pace-percent-threshold-error' : 'pace-percent-threshold-help'}
+                  aria-describedby={
+                    threshold.pacePercentThresholdError
+                      ? 'pace-percent-threshold-error'
+                      : 'pace-percent-threshold-help'
+                  }
                 />
                 {threshold.pacePercentThresholdError && (
-                  <p id="pace-percent-threshold-error" className="text-xs text-destructive" aria-live="polite">
+                  <p
+                    id="pace-percent-threshold-error"
+                    className="text-xs text-destructive"
+                    aria-live="polite"
+                  >
                     {threshold.pacePercentThresholdError}
                   </p>
                 )}
@@ -300,11 +348,13 @@ export function SettingsPage() {
             <CardHeader>
               <CardTitle>Presets management</CardTitle>
               <CardAction>
-                <Button type="button" size="sm" onClick={openCreateDialog}>Add Preset</Button>
+                <Button type="button" size="sm" onClick={openCreateDialog}>
+                  Add Preset
+                </Button>
               </CardAction>
             </CardHeader>
             <CardContent className="grid gap-2 py-4">
-              {presets.presetGroups.user.map(item => (
+              {presets.presetGroups.user.map((item) => (
                 <PresetRow
                   key={serializePresetRef(item.ref)!}
                   item={item}
@@ -322,7 +372,9 @@ export function SettingsPage() {
       <Dialog open={presetDialogOpen} onOpenChange={setPresetDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{presetDialogMode === 'create' ? 'Create preset' : 'Edit preset'}</DialogTitle>
+            <DialogTitle>
+              {presetDialogMode === 'create' ? 'Create preset' : 'Edit preset'}
+            </DialogTitle>
           </DialogHeader>
 
           <div className="grid gap-1.5">
@@ -332,13 +384,24 @@ export function SettingsPage() {
               name="presetName"
               autoComplete="off"
               value={presetDraft.name}
-              onChange={event => setPresetDraft(current => ({ ...current, name: event.target.value }))}
+              onChange={(event) =>
+                setPresetDraft((current) => ({
+                  ...current,
+                  name: event.target.value,
+                }))
+              }
               placeholder="Preset name"
               aria-invalid={Boolean(presetNameError)}
-              aria-describedby={presetNameError ? 'preset-name-error' : undefined}
+              aria-describedby={
+                presetNameError ? 'preset-name-error' : undefined
+              }
             />
             {presetNameError && (
-              <p id="preset-name-error" className="text-xs text-destructive" aria-live="polite">
+              <p
+                id="preset-name-error"
+                className="text-xs text-destructive"
+                aria-live="polite"
+              >
                 {presetNameError}
               </p>
             )}
@@ -351,27 +414,41 @@ export function SettingsPage() {
             serverUrlError={serverUrlError ?? undefined}
             participantsCsvUrlError={participantsCsvUrlError ?? undefined}
             classesHints={classesHints}
-            onServerUrlChange={value => setPresetDraft(current => ({ ...current, serverUrl: value }))}
-            onParticipantsCsvUrlChange={value => setPresetDraft(current => ({ ...current, participantsCsvUrl: value }))}
-            onClassesTextChange={value => setPresetDraft(current => ({ ...current, classesCsv: value }))}
+            onServerUrlChange={(value) =>
+              setPresetDraft((current) => ({ ...current, serverUrl: value }))
+            }
+            onParticipantsCsvUrlChange={(value) =>
+              setPresetDraft((current) => ({
+                ...current,
+                participantsCsvUrl: value,
+              }))
+            }
+            onClassesTextChange={(value) =>
+              setPresetDraft((current) => ({ ...current, classesCsv: value }))
+            }
           />
 
           <DialogFooter>
-            <Button type="button" onClick={handleSavePreset} disabled={!canSavePreset}>
+            <Button
+              type="button"
+              onClick={handleSavePreset}
+              disabled={!canSavePreset}
+            >
               Save
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={Boolean(deletePresetId)} onOpenChange={open => !open && setDeletePresetId(null)}>
+      <AlertDialog
+        open={Boolean(deletePresetId)}
+        onOpenChange={(open) => !open && setDeletePresetId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete preset?</AlertDialogTitle>
             <AlertDialogDescription>
-              Preset "
-              {deletePresetName}
-              " will be removed permanently.
+              Preset "{deletePresetName}" will be removed permanently.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -441,7 +518,7 @@ function validatePresetName({
 function buildNewPresetName(presets: SettingsPreset[]): string {
   let index = presets.length + 1
   const normalizedNames = new Set(
-    presets.map(preset => preset.name.trim().toLowerCase()),
+    presets.map((preset) => preset.name.trim().toLowerCase()),
   )
 
   while (index < Number.MAX_SAFE_INTEGER) {
@@ -464,7 +541,7 @@ function buildCarClassesHints(classesCsv: string): string[] {
   const hints: string[] = []
   const lines = classesCsv
     .split('\n')
-    .map(line => line.trim())
+    .map((line) => line.trim())
     .filter(Boolean)
 
   const seenNames = new Set<string>()
@@ -494,7 +571,7 @@ function buildCarClassesHints(classesCsv: string): string[] {
     const patterns = line
       .slice(colonIndex + 1)
       .split(',')
-      .map(pattern => pattern.trim())
+      .map((pattern) => pattern.trim())
       .filter(Boolean)
 
     if (patterns.length === 0) {
@@ -503,13 +580,19 @@ function buildCarClassesHints(classesCsv: string): string[] {
   }
 
   if (missingColon > 0) {
-    hints.push(`Warning: ${missingColon} line(s) miss ":" and will fallback to "ClassName: ClassName".`)
+    hints.push(
+      `Warning: ${missingColon} line(s) miss ":" and will fallback to "ClassName: ClassName".`,
+    )
   }
   if (duplicateNames > 0) {
-    hints.push(`Warning: ${duplicateNames} duplicate class name(s) will be ignored on save.`)
+    hints.push(
+      `Warning: ${duplicateNames} duplicate class name(s) will be ignored on save.`,
+    )
   }
   if (emptyPatternDefinitions > 0) {
-    hints.push(`Warning: ${emptyPatternDefinitions} line(s) have no patterns and will fallback to class name.`)
+    hints.push(
+      `Warning: ${emptyPatternDefinitions} line(s) have no patterns and will fallback to class name.`,
+    )
   }
 
   return hints
@@ -630,7 +713,10 @@ function parsePresetRef(value: string | null): PresetRef | null {
  * @param right Right ref.
  * @returns True when source and id are equal.
  */
-function presetRefEquals(left: PresetRef | null, right: PresetRef | null): boolean {
+function presetRefEquals(
+  left: PresetRef | null,
+  right: PresetRef | null,
+): boolean {
   if (!left || !right) {
     return false
   }

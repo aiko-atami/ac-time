@@ -1,7 +1,6 @@
 pre-commit:
   parallel: true
   commands:
-    lint:
-      glob: '*.{js,ts,tsx,jsx,json,yml,yaml,md,html,css}'
-      run: npx eslint --fix {staged_files}
+    biome:
+      run: npx biome check --write --staged --files-ignore-unknown=true --no-errors-on-unmatched
       stage_fixed: true

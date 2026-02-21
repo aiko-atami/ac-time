@@ -56,8 +56,8 @@
 
 ## Quality and Tests
 - Linting and formatting are mandatory.
-- Use existing ESLint setup (`npm run lint`).
-- Run ESLint only for files that were edited in the current task.
+- Use existing Biome setup (`npm run lint`, `npm run format`).
+- Run Biome checks at least for files edited in the current task; prefer full-project check before merge.
 - Tests only for critical units of logic; keep them small and focused.
 
 ## Git Conventions

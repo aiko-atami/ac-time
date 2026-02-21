@@ -18,8 +18,16 @@ interface Deferred<T> {
   resolve: (value: T) => void
 }
 interface LeaderboardFxParams {
-  serverUrl?: string
-  classRules: CarClassRule[]
+  requestId: number
+  request: {
+    serverUrl?: string
+    classRules: CarClassRule[]
+  }
+}
+
+interface LeaderboardFxDone {
+  requestId: number
+  data: ProcessedLeaderboard
 }
 
 /**
@@ -55,10 +63,23 @@ function createLeaderboardFixture(): ProcessedLeaderboard {
   }
 }
 
+/**
+ * Creates effect result payload preserving request id for stale-response filtering.
+ * @param params Original effect params.
+ * @param data Processed leaderboard payload.
+ * @returns Effect done payload shape.
+ */
+function createFxDone(params: LeaderboardFxParams, data: ProcessedLeaderboard): LeaderboardFxDone {
+  return {
+    requestId: params.requestId,
+    data,
+  }
+}
+
 describe('data.model', () => {
   it('should update request params and use default class rules when omitted', async () => {
     const scope = fork({
-      handlers: [[loadLeaderboardFx, () => createLeaderboardFixture()]],
+      handlers: [[loadLeaderboardFx, async (params: LeaderboardFxParams) => createFxDone(params, createLeaderboardFixture())]],
     })
     await allSettled(leaderboardParamsChanged, {
       scope,
@@ -76,8 +97,8 @@ describe('data.model', () => {
     const classRules: CarClassRule[] = [{ name: 'GT3', patterns: ['gt3'] }]
     const scope = fork({
       handlers: [[loadLeaderboardFx, async (params: LeaderboardFxParams) => {
-        calls.push(params)
-        return payload
+        calls.push(params.request)
+        return createFxDone(params, payload)
       }]],
     })
     await allSettled(leaderboardParamsChanged, {
@@ -97,8 +118,8 @@ describe('data.model', () => {
     const calls: Array<{ serverUrl?: string, classRules: CarClassRule[] }> = []
     const scope = fork({
       handlers: [[loadLeaderboardFx, async (params: LeaderboardFxParams) => {
-        calls.push(params)
-        return createLeaderboardFixture()
+        calls.push(params.request)
+        return createFxDone(params, createLeaderboardFixture())
       }]],
     })
     await allSettled(leaderboardParamsChanged, {
@@ -119,12 +140,12 @@ describe('data.model', () => {
   it('should set error on failure and clear it after success', async () => {
     let failOnce = true
     const scope = fork({
-      handlers: [[loadLeaderboardFx, async () => {
+      handlers: [[loadLeaderboardFx, async (params: LeaderboardFxParams) => {
         if (failOnce) {
           failOnce = false
           throw new Error('Network failed')
         }
-        return createLeaderboardFixture()
+        return createFxDone(params, createLeaderboardFixture())
       }]],
     })
     await allSettled(leaderboardParamsChanged, {
@@ -138,7 +159,7 @@ describe('data.model', () => {
   })
 
   it('should expose pending loading state while async request is in flight', async () => {
-    const deferred = createDeferred<ProcessedLeaderboard>()
+    const deferred = createDeferred<LeaderboardFxDone>()
     const scope = fork({
       handlers: [[loadLeaderboardFx, () => deferred.promise]],
     })
@@ -148,7 +169,10 @@ describe('data.model', () => {
     })
     await Promise.resolve()
     expect(scope.getState($leaderboardLoading)).toBe(true)
-    deferred.resolve(createLeaderboardFixture())
+    deferred.resolve({
+      requestId: 1,
+      data: createLeaderboardFixture(),
+    })
     await running
     expect(scope.getState($leaderboardLoading)).toBe(false)
   })

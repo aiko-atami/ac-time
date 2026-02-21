@@ -1,7 +1,8 @@
-// @anchor: leaderboard/pages/live-timing/model/championship-participants
-// @intent: Load participants list from configurable CSV URL and match leaderboard entries.
+// Loads participants from configured CSV source and provides registration matcher.
 import type { ProcessedEntry } from '@/shared/types'
-import { useCallback, useEffect, useMemo, useReducer } from 'react'
+import { createEffect, createEvent, createStore, sample } from 'effector'
+import { useUnit } from 'effector-react'
+import { useCallback, useEffect, useMemo } from 'react'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 
@@ -176,41 +177,82 @@ interface UseChampionshipParticipantsOptions {
   matchByDriverNameOnly?: boolean
 }
 
-interface ParticipantsState {
+interface ParticipantsLoadRequest {
+  requestId: number
+  sourceUrl: string
+}
+
+interface ParticipantsLoadDone {
+  requestId: number
   participants: Participant[]
-  loading: boolean
 }
 
-type ParticipantsAction
-  = | { type: 'load-start' }
-    | { type: 'load-success', participants: Participant[] }
-    | { type: 'load-failure' }
+const participantsOptionsChanged = createEvent<UseChampionshipParticipantsOptions>()
+const participantsLoadRequested = createEvent<ParticipantsLoadRequest>()
+const participantsLoadSucceeded = createEvent<ParticipantsLoadDone>()
+const participantsLoadFailed = createEvent()
+const participantsReset = createEvent()
 
-/**
- * Updates participants loading state machine.
- * @param state Current participants state.
- * @param action Action payload.
- * @returns Next participants state.
- */
-function participantsReducer(state: ParticipantsState, action: ParticipantsAction): ParticipantsState {
-  switch (action.type) {
-    case 'load-start':
-      return {
-        ...state,
-        loading: true,
-      }
-    case 'load-success':
-      return {
-        participants: action.participants,
-        loading: false,
-      }
-    case 'load-failure':
-      return {
-        participants: [],
-        loading: false,
-      }
-  }
-}
+const $participants = createStore<Participant[]>([])
+  .on(participantsLoadSucceeded, (_, payload) => payload.participants)
+  .reset(participantsReset)
+
+const $participantsLoading = createStore(false)
+  .on(participantsLoadRequested, () => true)
+  .on(participantsLoadSucceeded, () => false)
+  .on(participantsLoadFailed, () => false)
+  .on(participantsReset, () => false)
+
+const $participantsRequestId = createStore(0)
+  .on(participantsLoadRequested, (_, payload) => payload.requestId)
+
+const $matchByDriverNameOnly = createStore(false)
+  .on(participantsOptionsChanged, (_, options) => options.matchByDriverNameOnly ?? false)
+
+const loadParticipantsFx = createEffect(
+  async ({ sourceUrl, requestId }: ParticipantsLoadRequest): Promise<ParticipantsLoadDone> => {
+    const participants = await fetchParticipantsList(sourceUrl)
+    return { requestId, participants }
+  },
+)
+
+sample({
+  clock: participantsOptionsChanged,
+  filter: (_, options) => (options.participantsCsvUrl?.trim() ?? '').length > 0,
+  source: $participantsRequestId,
+  fn: (requestId, options) => ({
+    requestId: requestId + 1,
+    sourceUrl: options.participantsCsvUrl!.trim(),
+  }),
+  target: participantsLoadRequested,
+})
+
+sample({
+  clock: participantsOptionsChanged,
+  filter: options => (options.participantsCsvUrl?.trim() ?? '').length === 0,
+  target: participantsReset,
+})
+
+sample({
+  clock: participantsLoadRequested,
+  target: loadParticipantsFx,
+})
+
+sample({
+  clock: loadParticipantsFx.doneData,
+  source: $participantsRequestId,
+  filter: (activeRequestId, payload) => activeRequestId === payload.requestId,
+  fn: (_, payload) => payload,
+  target: participantsLoadSucceeded,
+})
+
+sample({
+  clock: loadParticipantsFx.fail,
+  source: $participantsRequestId,
+  filter: (activeRequestId, payload) => activeRequestId === payload.params.requestId,
+  fn: () => undefined,
+  target: participantsLoadFailed,
+})
 
 /**
  * Loads championship participants and provides registration matching utility.
@@ -219,38 +261,24 @@ function participantsReducer(state: ParticipantsState, action: ParticipantsActio
  */
 export function useChampionshipParticipants(options: UseChampionshipParticipantsOptions = {}) {
   const { participantsCsvUrl, matchByDriverNameOnly = false } = options
-  const normalizedParticipantsCsvUrl = participantsCsvUrl?.trim() ?? ''
-  const [{ participants, loading }, dispatch] = useReducer(participantsReducer, {
-    participants: [],
-    loading: true,
+  const {
+    participants,
+    loading,
+    currentMatchByDriverNameOnly,
+    setParticipantsOptions,
+  } = useUnit({
+    participants: $participants,
+    loading: $participantsLoading,
+    currentMatchByDriverNameOnly: $matchByDriverNameOnly,
+    setParticipantsOptions: participantsOptionsChanged,
   })
 
   useEffect(() => {
-    if (!normalizedParticipantsCsvUrl) {
-      dispatch({ type: 'load-success', participants: [] })
-      return
-    }
-
-    let cancelled = false
-    dispatch({ type: 'load-start' })
-
-    fetchParticipantsList(normalizedParticipantsCsvUrl)
-      .then((result) => {
-        if (!cancelled) {
-          dispatch({ type: 'load-success', participants: result })
-        }
-      })
-      .catch((err) => {
-        console.error('Error loading participants:', err)
-        if (!cancelled) {
-          dispatch({ type: 'load-failure' })
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [normalizedParticipantsCsvUrl])
+    setParticipantsOptions({
+      participantsCsvUrl,
+      matchByDriverNameOnly,
+    })
+  }, [matchByDriverNameOnly, participantsCsvUrl, setParticipantsOptions])
 
   const normalizedParticipants = useMemo<NormalizedParticipant[]>(() => {
     return participants.map((participant) => {
@@ -289,7 +317,7 @@ export function useChampionshipParticipants(options: UseChampionshipParticipants
     const candidates = participantsByName.get(entryNameKey)
     if (!candidates)
       return false
-    if (matchByDriverNameOnly)
+    if (currentMatchByDriverNameOnly)
       return true
 
     const entryClass = normalizeText(entry.carClass)
@@ -298,7 +326,7 @@ export function useChampionshipParticipants(options: UseChampionshipParticipants
     return candidates.some(
       p => matchesParticipantCandidate(p, entryClass, entryCarTokens),
     )
-  }, [matchByDriverNameOnly, normalizedParticipants.length, participantsByName])
+  }, [currentMatchByDriverNameOnly, normalizedParticipants.length, participantsByName])
 
   return { participants, loading, isRegistered }
 }

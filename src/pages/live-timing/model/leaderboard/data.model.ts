@@ -14,17 +14,27 @@ interface LeaderboardRequestState {
   classRules: CarClassRule[]
 }
 
+interface LeaderboardLoadRequest {
+  requestId: number
+  request: LeaderboardRequestState
+}
+
+interface LeaderboardLoadDone {
+  requestId: number
+  data: ProcessedLeaderboard
+}
+
 const DEFAULT_REQUEST_PARAMS: LeaderboardRequestState = {
   classRules: DEFAULT_CLASS_RULES,
 }
-
-// Module-scoped controller — aborted on each new request to cancel stale responses.
-let activeController: AbortController | null = null
 
 // UI/settings changed request parameters for leaderboard loading.
 export const leaderboardParamsChanged = createEvent<LeaderboardRequestParams>()
 // Trigger a manual/periodic refresh using latest known request params.
 export const leaderboardRefetchRequested = createEvent()
+const leaderboardLoadRequested = createEvent<LeaderboardLoadRequest>()
+const leaderboardDataReceived = createEvent<ProcessedLeaderboard>()
+const leaderboardLoadFailed = createEvent<Error>()
 
 // Last known params used to load leaderboard data.
 export const $leaderboardRequestParams = createStore<LeaderboardRequestState>(DEFAULT_REQUEST_PARAMS)
@@ -33,58 +43,64 @@ export const $leaderboardRequestParams = createStore<LeaderboardRequestState>(DE
     classRules: params.classRules ?? DEFAULT_CLASS_RULES,
   }))
 
+const $leaderboardRequestId = createStore(0)
+  .on(leaderboardLoadRequested, (_, payload) => payload.requestId)
+
 // Performs API call to load processed leaderboard payload.
-// Aborts any previous in-flight request before starting a new one.
 export const loadLeaderboardFx = createEffect(
-  async (params: LeaderboardRequestState): Promise<ProcessedLeaderboard> => {
-    // Cancel previous in-flight request to prevent stale data overwrite.
-    if (activeController) {
-      activeController.abort()
-    }
-    activeController = new AbortController()
-    const { signal } = activeController
-
-    const result = await fetchLeaderboard({
-      serverUrl: params.serverUrl,
-      classRules: params.classRules,
-      signal,
+  async ({ request, requestId }: LeaderboardLoadRequest): Promise<LeaderboardLoadDone> => {
+    const data = await fetchLeaderboard({
+      serverUrl: request.serverUrl,
+      classRules: request.classRules,
     })
-
-    // If this request was aborted while awaiting, discard its result.
-    if (signal.aborted) {
-      throw new DOMException('Request superseded by newer call', 'AbortError')
-    }
-
-    return result
+    return { requestId, data }
   },
 )
 
 // Latest successfully loaded leaderboard response.
 export const $leaderboardData = createStore<ProcessedLeaderboard | null>(null)
-  .on(loadLeaderboardFx.doneData, (_, payload) => payload)
+  .on(leaderboardDataReceived, (_, payload) => payload)
 
 // Unhandled runtime error from effect boundary (network throws, etc).
-// AbortError from superseded requests is silently ignored.
 export const $leaderboardError = createStore<Error | null>(null)
-  .on(loadLeaderboardFx.failData, (prev, error) => {
-    if (error instanceof DOMException && error.name === 'AbortError') {
-      return prev
-    }
-    return error
-  })
-  .reset(loadLeaderboardFx.done)
+  .on(leaderboardLoadFailed, (_, error) => error)
+  .reset(leaderboardDataReceived)
 
 // True while leaderboard loading effect is in progress.
 export const $leaderboardLoading = loadLeaderboardFx.pending
 
 sample({
-  clock: leaderboardParamsChanged,
-  source: $leaderboardRequestParams,
+  clock: [leaderboardParamsChanged, leaderboardRefetchRequested],
+  source: {
+    request: $leaderboardRequestParams,
+    requestId: $leaderboardRequestId,
+  },
+  fn: ({ request, requestId }) => ({
+    request,
+    requestId: requestId + 1,
+  }),
+  target: leaderboardLoadRequested,
+})
+
+sample({
+  clock: leaderboardLoadRequested,
   target: loadLeaderboardFx,
 })
 
 sample({
-  clock: leaderboardRefetchRequested,
-  source: $leaderboardRequestParams,
-  target: loadLeaderboardFx,
+  clock: loadLeaderboardFx.doneData,
+  source: $leaderboardRequestId,
+  filter: (activeRequestId, payload) => activeRequestId === payload.requestId,
+  fn: (_, payload) => payload.data,
+  target: leaderboardDataReceived,
+})
+
+sample({
+  clock: loadLeaderboardFx.fail,
+  source: $leaderboardRequestId,
+  filter: (activeRequestId, payload) => activeRequestId === payload.params.requestId,
+  fn: (_, payload) => payload.error instanceof Error
+    ? payload.error
+    : new Error('Failed to load leaderboard'),
+  target: leaderboardLoadFailed,
 })

@@ -76,7 +76,7 @@
     "settings": {
       "serverUrl": "https://ac9.yoklmnracing.ru/api/live-timings/leaderboard.json",
       "carClasses": [],
-      "participantsCsvUrl": ""
+      "participantsCsvUrl": "https://github.com/aiko-atami/ac-time/releases/download/championship-538/participants-538.csv"
     }
   }
 ]

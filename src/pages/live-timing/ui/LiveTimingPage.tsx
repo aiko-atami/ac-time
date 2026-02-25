@@ -1,10 +1,20 @@
 // @anchor: leaderboard/pages/live-timing/ui
 // @intent: Live timing page composition wiring settings, data loading, filters and leaderboard rendering.
-import type { ProcessedEntry, ProcessedLeaderboard } from '@/shared/types'
+
 import { Link } from '@argon-router/react'
 import { IconSettings } from '@tabler/icons-react'
 import { routes } from '@/shared/routing'
+import type { ProcessedEntry, ProcessedLeaderboard } from '@/shared/types'
 import { buttonVariants } from '@/shared/ui/button-variants'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select'
 import { useLiveTimingPageModel } from '../model/useLiveTimingPageModel'
 import { Leaderboard } from './leaderboard/Leaderboard'
 import { LeaderboardFilters } from './leaderboard/LeaderboardFilters'
@@ -15,12 +25,24 @@ import { LoadingState } from './states/LoadingState'
 
 interface LiveTimingHeaderProps {
   data: ProcessedLeaderboard | null
+  activePresetName: string
+  activePresetValue: string | undefined
+  officialPresetOptions: Array<{ value: string; label: string }>
+  userPresetOptions: Array<{ value: string; label: string }>
+  setActivePresetValue: (value: string | null) => void
 }
 
 /**
  * Renders page header with server info, session metadata and settings trigger.
  */
-function LiveTimingHeader({ data }: LiveTimingHeaderProps) {
+function LiveTimingHeader({
+  data,
+  activePresetName,
+  activePresetValue,
+  officialPresetOptions,
+  userPresetOptions,
+  setActivePresetValue,
+}: LiveTimingHeaderProps) {
   return (
     <header className="mb-4 sm:mb-5">
       <div className="flex items-start justify-between gap-2">
@@ -31,37 +53,65 @@ function LiveTimingHeader({ data }: LiveTimingHeaderProps) {
 
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             {data?.sessionName && (
-              <span className="font-semibold">
-                {data.sessionName}
-              </span>
+              <span className="font-semibold">{data.sessionName}</span>
             )}
             {data?.track && (
               <>
                 <span className="hidden sm:inline">•</span>
-                <span>
-                  @
-                  {data.track}
-                </span>
+                <span>@{data.track}</span>
               </>
             )}
           </div>
         </div>
 
-        <Link
-          to={routes.settings}
-          title="Settings"
-          aria-label="Settings"
-          className={buttonVariants({ variant: 'ghost', size: 'icon' })}
-        >
-          <IconSettings className="h-5 w-5" />
-        </Link>
+        <div className="flex items-center gap-2 shrink-0">
+          <Select
+            value={activePresetValue}
+            onValueChange={setActivePresetValue}
+          >
+            <SelectTrigger
+              size="sm"
+              aria-label="Select active preset"
+              className="w-44 sm:w-56"
+            >
+              <SelectValue placeholder="Select preset">
+                {activePresetName}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Official</SelectLabel>
+                {officialPresetOptions.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+              <SelectGroup>
+                <SelectLabel>Your presets</SelectLabel>
+                {userPresetOptions.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+
+          <Link
+            to={routes.settings}
+            title="Settings"
+            aria-label="Settings"
+            className={buttonVariants({ variant: 'ghost', size: 'icon' })}
+          >
+            <IconSettings className="h-5 w-5" />
+          </Link>
+        </div>
       </div>
 
       {data?.lastUpdate && (
         <p className="text-xs text-muted-foreground">
-          Updated:
-          {' '}
-          {new Date(data.lastUpdate).toLocaleTimeString()}
+          Updated: {new Date(data.lastUpdate).toLocaleTimeString()}
         </p>
       )}
     </header>
@@ -133,8 +183,7 @@ function LiveTimingContent(props: LiveTimingContentProps) {
           <div className="flex items-start gap-2">
             <span className="text-lg">⚠️</span>
             <div>
-              <strong className="font-semibold">Connection Error:</strong>
-              {' '}
+              <strong className="font-semibold">Connection Error:</strong>{' '}
               <span className="text-sm">{data.error}</span>
             </div>
           </div>
@@ -189,6 +238,11 @@ export function LiveTimingPage() {
     setSearchQuery,
     pacePercentThreshold,
     isRegistered,
+    activePresetName,
+    activePresetValue,
+    officialPresetOptions,
+    userPresetOptions,
+    setActivePresetValue,
   } = useLiveTimingPageModel()
 
   return (
@@ -196,6 +250,11 @@ export function LiveTimingPage() {
       <div className="container mx-auto px-3 py-4 sm:py-5 max-w-4xl md:max-w-6xl lg:max-w-7xl">
         <LiveTimingHeader
           data={data}
+          activePresetName={activePresetName}
+          activePresetValue={activePresetValue}
+          officialPresetOptions={officialPresetOptions}
+          userPresetOptions={userPresetOptions}
+          setActivePresetValue={setActivePresetValue}
         />
         <LiveTimingContent
           data={data}

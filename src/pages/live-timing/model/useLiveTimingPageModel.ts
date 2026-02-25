@@ -1,9 +1,10 @@
 // View-model for the live timing page that centralizes data orchestration outside UI components.
-import type { ProcessedEntry } from '@/shared/types'
+
 import { useMemo } from 'react'
 import { useSettingsPresets } from '@/features/settings-presets'
 import { useSettingsThreshold } from '@/features/settings-threshold'
 import { DEFAULT_REFRESH_INTERVAL } from '@/shared/config/constants'
+import type { PresetRef, ProcessedEntry } from '@/shared/types'
 import { useChampionshipParticipants } from './championship-participants/useChampionshipParticipants'
 import { useLeaderboardFilters } from './leaderboard/useLeaderboardFilters'
 import { useLeaderboard } from './useLeaderboard'
@@ -28,6 +29,11 @@ interface UseLiveTimingPageModelReturn {
   setSearchQuery: (value: string) => void
   pacePercentThreshold: number
   isRegistered: (entry: ProcessedEntry) => boolean
+  activePresetName: string
+  activePresetValue: string | undefined
+  officialPresetOptions: Array<{ value: string; label: string }>
+  userPresetOptions: Array<{ value: string; label: string }>
+  setActivePresetValue: (value: string | null) => void
 }
 
 /**
@@ -40,7 +46,9 @@ export function useLiveTimingPageModel(): UseLiveTimingPageModelReturn {
 
   const activeSettings = presets.activePreset?.settings ?? null
   const enableClassGrouping = (activeSettings?.carClasses.length ?? 0) > 0
-  const enableParticipantsFiltering = Boolean(activeSettings?.participantsCsvUrl.trim())
+  const enableParticipantsFiltering = Boolean(
+    activeSettings?.participantsCsvUrl.trim(),
+  )
 
   const { isRegistered } = useChampionshipParticipants({
     participantsCsvUrl: activeSettings?.participantsCsvUrl,
@@ -78,6 +86,32 @@ export function useLiveTimingPageModel(): UseLiveTimingPageModelReturn {
     enableParticipantsFiltering,
   )
 
+  const activePresetName = useMemo(
+    () =>
+      presets.presetItems.find((item) =>
+        presetRefEquals(item.ref, presets.activePresetRef),
+      )?.preset.name ?? 'Select preset',
+    [presets.activePresetRef, presets.presetItems],
+  )
+
+  const activePresetValue =
+    serializePresetRef(presets.activePresetRef) ?? undefined
+  const officialPresetOptions = presets.presetGroups.official.map((item) => ({
+    value: serializePresetRef(item.ref)!,
+    label: item.preset.name,
+  }))
+  const userPresetOptions = presets.presetGroups.user.map((item) => ({
+    value: serializePresetRef(item.ref)!,
+    label: item.preset.name,
+  }))
+
+  const setActivePresetValue = (value: string | null) => {
+    const presetRef = parsePresetRef(value)
+    if (presetRef) {
+      presets.selectPreset(presetRef)
+    }
+  }
+
   return {
     data,
     loading,
@@ -96,5 +130,59 @@ export function useLiveTimingPageModel(): UseLiveTimingPageModelReturn {
     setSearchQuery,
     pacePercentThreshold: threshold.pacePercentThreshold,
     isRegistered,
+    activePresetName,
+    activePresetValue,
+    officialPresetOptions,
+    userPresetOptions,
+    setActivePresetValue,
   }
+}
+
+/**
+ * Serializes source-aware preset ref for Select value field.
+ * @param presetRef Source-aware preset ref.
+ * @returns String value or null.
+ */
+function serializePresetRef(presetRef: PresetRef | null): string | null {
+  if (!presetRef) {
+    return null
+  }
+
+  return `${presetRef.source}:${presetRef.id}`
+}
+
+/**
+ * Parses Select value into source-aware preset ref.
+ * @param value Select value.
+ * @returns Parsed preset ref or null.
+ */
+function parsePresetRef(value: string | null): PresetRef | null {
+  if (!value) {
+    return null
+  }
+
+  const [source, ...idParts] = value.split(':')
+  const id = idParts.join(':').trim()
+  if (!id || (source !== 'official' && source !== 'user')) {
+    return null
+  }
+
+  return { source, id }
+}
+
+/**
+ * Checks whether two source-aware references are equal.
+ * @param left Left ref.
+ * @param right Right ref.
+ * @returns True when source and id are equal.
+ */
+function presetRefEquals(
+  left: PresetRef | null,
+  right: PresetRef | null,
+): boolean {
+  if (!left || !right) {
+    return false
+  }
+
+  return left.source === right.source && left.id === right.id
 }

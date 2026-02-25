@@ -1,7 +1,8 @@
 // Tests for settings presets pure CRUD, migration, and normalization utilities.
-import type { SettingsPresetsState, SettingsSnapshot } from '@/shared/types'
+
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_SERVER_URL } from '@/shared/config/constants'
+import type { SettingsPresetsState, SettingsSnapshot } from '@/shared/types'
 import {
   clonePreset,
   createDefaultSettingsSnapshot,
@@ -18,7 +19,9 @@ import {
  * @param overrides Select fields to override.
  * @returns Test presets state.
  */
-function createTestState(overrides: Partial<SettingsPresetsState> = {}): SettingsPresetsState {
+function createTestState(
+  overrides: Partial<SettingsPresetsState> = {},
+): SettingsPresetsState {
   const snapshot = createDefaultSettingsSnapshot()
   const preset = {
     id: 'test-preset-1',
@@ -47,20 +50,29 @@ describe('selectActivePresetRef', () => {
   it('should set active preset to given user id when preset exists', () => {
     const state = createTestState()
     const presetId = state.presets[0].id
-    const result = selectActivePresetRef(state, { source: 'user', id: presetId })
+    const result = selectActivePresetRef(state, {
+      source: 'user',
+      id: presetId,
+    })
     expect(result.activePresetRef).toEqual({ source: 'user', id: presetId })
   })
 
   it('should keep previous active when user id does not exist', () => {
     const state = createTestState()
     const prev = state.activePresetRef
-    const result = selectActivePresetRef(state, { source: 'user', id: 'nonexistent-id' })
+    const result = selectActivePresetRef(state, {
+      source: 'user',
+      id: 'nonexistent-id',
+    })
     expect(result.activePresetRef).toEqual(prev)
   })
 
   it('should allow selecting official ref even if it is not in user list', () => {
     const state = createTestState()
-    const result = selectActivePresetRef(state, { source: 'official', id: 'ac8' })
+    const result = selectActivePresetRef(state, {
+      source: 'official',
+      id: 'ac8',
+    })
     expect(result.activePresetRef).toEqual({ source: 'official', id: 'ac8' })
   })
 })
@@ -72,9 +84,12 @@ describe('createPreset', () => {
     const result = createPreset(state, 'New Preset', snapshot)
     expect(result.presets.length).toBe(state.presets.length + 1)
 
-    const newPreset = result.presets.find(p => p.name === 'New Preset')
+    const newPreset = result.presets.find((p) => p.name === 'New Preset')
     expect(newPreset).toBeDefined()
-    expect(result.activePresetRef).toEqual({ source: 'user', id: newPreset!.id })
+    expect(result.activePresetRef).toEqual({
+      source: 'user',
+      id: newPreset!.id,
+    })
   })
 })
 
@@ -87,7 +102,7 @@ describe('updatePreset', () => {
       serverUrl: 'https://new-server.test/api.json',
     }
     const result = updatePreset(state, presetId, 'Renamed', newSettings)
-    const updated = result.presets.find(p => p.id === presetId)
+    const updated = result.presets.find((p) => p.id === presetId)
     expect(updated?.name).toBe('Renamed')
     expect(updated?.settings.serverUrl).toBe('https://new-server.test/api.json')
   })
@@ -109,7 +124,7 @@ describe('clonePreset', () => {
     const result = clonePreset(state, 'a')
     expect(result.presets.length).toBe(2)
 
-    const clone = result.presets.find(p => p.id !== 'a')
+    const clone = result.presets.find((p) => p.id !== 'a')
     expect(clone?.name).toBe('Race (1)')
     expect(clone?.settings).toEqual(state.presets[0].settings)
     expect(result.activePresetRef).toEqual({ source: 'user', id: 'a' })
@@ -123,13 +138,14 @@ describe('deletePreset', () => {
     const withExtra = createPreset(state, 'Extra', snapshot)
     const firstId = withExtra.presets[0].id
     const result = deletePreset(withExtra, firstId)
-    expect(result.presets.find(p => p.id === firstId)).toBeUndefined()
+    expect(result.presets.find((p) => p.id === firstId)).toBeUndefined()
   })
 
-  it('should not remove the last remaining preset', () => {
+  it('should remove the last remaining preset and clear active ref', () => {
     const state = createTestState()
     const result = deletePreset(state, state.presets[0].id)
-    expect(result.presets.length).toBeGreaterThanOrEqual(1)
+    expect(result.presets).toHaveLength(0)
+    expect(result.activePresetRef).toBeNull()
   })
 
   it('should switch active preset when active user preset is deleted', () => {
@@ -140,7 +156,9 @@ describe('deletePreset', () => {
     const result = deletePreset(withExtra, activeRef.id)
     expect(result.activePresetRef).not.toEqual(activeRef)
     expect(result.activePresetRef?.source).toBe('user')
-    expect(result.presets.find(p => p.id === result.activePresetRef?.id)).toBeDefined()
+    expect(
+      result.presets.find((p) => p.id === result.activePresetRef?.id),
+    ).toBeDefined()
   })
 })
 
@@ -153,7 +171,9 @@ describe('getActiveUserPreset', () => {
   })
 
   it('should fallback to first preset when active ref points to missing user preset', () => {
-    const state = createTestState({ activePresetRef: { source: 'user', id: 'ghost-id' } })
+    const state = createTestState({
+      activePresetRef: { source: 'user', id: 'ghost-id' },
+    })
     const active = getActiveUserPreset(state)
     expect(active).not.toBeNull()
     expect(active!.id).toBe(state.presets[0].id)
@@ -163,8 +183,8 @@ describe('getActiveUserPreset', () => {
 describe('normalizeState', () => {
   it('should normalize invalid payload to default state', () => {
     const normalized = normalizeState(null)
-    expect(normalized.presets.length).toBeGreaterThan(0)
-    expect(normalized.activePresetRef).toBeTruthy()
+    expect(normalized.presets).toHaveLength(0)
+    expect(normalized.activePresetRef).toBeNull()
   })
 
   it('should migrate v1 activePresetId into activePresetRef', () => {
@@ -186,6 +206,8 @@ describe('normalizeState', () => {
     })
 
     expect(normalized.activePresetRef).toEqual({ source: 'user', id: 'x' })
-    expect(normalized.presets[0].settings).not.toHaveProperty('pacePercentThreshold')
+    expect(normalized.presets[0].settings).not.toHaveProperty(
+      'pacePercentThreshold',
+    )
   })
 })

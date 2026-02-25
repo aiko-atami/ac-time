@@ -51,10 +51,19 @@ describe('presets.model persistence', () => {
   it('persists cloned preset to localStorage key', async () => {
     const model = await import('./presets.model')
     const scope = fork()
+    await allSettled(model.presetCreated, {
+      scope,
+      params: {
+        name: 'User preset',
+        settings: {
+          serverUrl: 'https://user.test/leaderboard.json',
+          participantsCsvUrl: '',
+          carClasses: [],
+        },
+      },
+    })
     const initialState = scope.getState(model.$presetsState)
     const sourcePresetId = initialState.presets[0]?.id
-
-    expect(sourcePresetId).toBeDefined()
 
     await allSettled(model.presetCloned, {
       scope,
@@ -121,8 +130,8 @@ describe('presets.model persistence', () => {
     await allSettled(model.presetsPersistencePickupRequested, { scope })
 
     const state = scope.getState(model.$presetsState)
-    expect(state.presets.length).toBeGreaterThan(0)
-    expect(state.activePresetRef).not.toBeNull()
+    expect(state.presets).toHaveLength(0)
+    expect(state.activePresetRef).toBeNull()
   })
 
   it('keeps official active preset ref after pickup before official sync completes', async () => {

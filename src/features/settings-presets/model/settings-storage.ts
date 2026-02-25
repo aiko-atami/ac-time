@@ -1,10 +1,17 @@
 // Presets domain utilities: normalization, CRUD and clone naming.
-import type { CarClassRule, PresetRef, SettingsPreset, SettingsPresetsState, SettingsSnapshot } from '@/shared/types'
+
 import {
   DEFAULT_CLASS_RULES,
   DEFAULT_PARTICIPANTS_CSV_URL,
   DEFAULT_SERVER_URL,
 } from '@/shared/config/constants'
+import type {
+  CarClassRule,
+  PresetRef,
+  SettingsPreset,
+  SettingsPresetsState,
+  SettingsSnapshot,
+} from '@/shared/types'
 import { dedupeCarClassRules } from './serialize'
 
 const SETTINGS_PRESETS_VERSION = 2 as const
@@ -28,49 +35,8 @@ export function createDefaultSettingsSnapshot(): SettingsSnapshot {
 export function createDefaultPresetsState(): SettingsPresetsState {
   return {
     version: SETTINGS_PRESETS_VERSION,
-    activePresetRef: { source: 'user', id: 'e4606c07-42c7-4ab1-86b9-639e1ddfd3ea' },
-    presets: [
-      {
-        id: '9d5388f6-2867-4cf5-801d-c883706d82c1',
-        name: 'AC7 Gold',
-        settings: {
-          serverUrl: 'https://ac7.yoklmnracing.ru/api/live-timings/leaderboard.json',
-          carClasses: [],
-          participantsCsvUrl: 'https://github.com/aiko-atami/ac-time/releases/download/championship-537/participants-537.csv',
-        },
-      },
-      {
-        id: 'e4606c07-42c7-4ab1-86b9-639e1ddfd3ea',
-        name: 'AC8 Bronze Silver',
-        settings: {
-          serverUrl: 'https://ac8.yoklmnracing.ru/api/live-timings/leaderboard.json',
-          carClasses: [
-            {
-              name: 'Серебро',
-              patterns: ['SUPER-PRODUCTION'],
-            },
-            {
-              name: 'Бронза 1',
-              patterns: ['LADA 2118 Concept C GT'],
-            },
-            {
-              name: 'Бронза 2',
-              patterns: ['LADA 2118 Concept C GT'],
-            },
-          ],
-          participantsCsvUrl: 'https://github.com/aiko-atami/ac-time/releases/download/championship-537/participants-537.csv',
-        },
-      },
-      {
-        id: 'c1a34007-0e08-41e7-8e48-dd5312fef72d',
-        name: 'AC9',
-        settings: {
-          serverUrl: 'https://ac9.yoklmnracing.ru/api/live-timings/leaderboard.json',
-          carClasses: [],
-          participantsCsvUrl: 'https://github.com/aiko-atami/ac-time/releases/download/championship-538/participants-538.csv',
-        },
-      },
-    ],
+    activePresetRef: null,
+    presets: [],
   }
 }
 
@@ -85,10 +51,12 @@ export function normalizeState(value: unknown): SettingsPresetsState {
     return fallback
   }
 
-  const source = value as Partial<SettingsPresetsState> & { activePresetId?: unknown }
+  const source = value as Partial<SettingsPresetsState> & {
+    activePresetId?: unknown
+  }
   const rawPresets = Array.isArray(source.presets) ? source.presets : []
   const presets = rawPresets
-    .map(item => normalizePreset(item))
+    .map((item) => normalizePreset(item))
     .filter((item): item is SettingsPreset => item !== null)
 
   if (presets.length === 0) {
@@ -114,8 +82,14 @@ export function normalizeState(value: unknown): SettingsPresetsState {
  * @param presetRef Target preset reference.
  * @returns Updated state with active preset reference.
  */
-export function selectActivePresetRef(state: SettingsPresetsState, presetRef: PresetRef): SettingsPresetsState {
-  if (presetRef.source === 'user' && !state.presets.some(preset => preset.id === presetRef.id)) {
+export function selectActivePresetRef(
+  state: SettingsPresetsState,
+  presetRef: PresetRef,
+): SettingsPresetsState {
+  if (
+    presetRef.source === 'user' &&
+    !state.presets.some((preset) => preset.id === presetRef.id)
+  ) {
     return state
   }
 
@@ -183,24 +157,27 @@ export function updatePreset(
 }
 
 /**
- * Deletes a preset by id while preserving at least one preset.
+ * Deletes a preset by id.
  * @param state Source state.
  * @param presetId Preset id.
  * @returns Updated state.
  */
-export function deletePreset(state: SettingsPresetsState, presetId: string): SettingsPresetsState {
-  if (state.presets.length <= 1) {
-    return state
-  }
-
-  const presets = state.presets.filter(preset => preset.id !== presetId)
+export function deletePreset(
+  state: SettingsPresetsState,
+  presetId: string,
+): SettingsPresetsState {
+  const presets = state.presets.filter((preset) => preset.id !== presetId)
   if (presets.length === state.presets.length) {
     return state
   }
 
-  const activePresetRef = state.activePresetRef?.source === 'user' && state.activePresetRef.id === presetId
-    ? (presets[0] ? { source: 'user' as const, id: presets[0].id } : null)
-    : state.activePresetRef
+  const activePresetRef =
+    state.activePresetRef?.source === 'user' &&
+    state.activePresetRef.id === presetId
+      ? presets[0]
+        ? { source: 'user' as const, id: presets[0].id }
+        : null
+      : state.activePresetRef
 
   return {
     ...state,
@@ -215,8 +192,11 @@ export function deletePreset(state: SettingsPresetsState, presetId: string): Set
  * @param presetId Source preset id.
  * @returns Updated state.
  */
-export function clonePreset(state: SettingsPresetsState, presetId: string): SettingsPresetsState {
-  const sourcePreset = state.presets.find(preset => preset.id === presetId)
+export function clonePreset(
+  state: SettingsPresetsState,
+  presetId: string,
+): SettingsPresetsState {
+  const sourcePreset = state.presets.find((preset) => preset.id === presetId)
   if (!sourcePreset) {
     return state
   }
@@ -239,10 +219,14 @@ export function clonePreset(state: SettingsPresetsState, presetId: string): Sett
  * @param state Presets state.
  * @returns Active user preset or null.
  */
-export function getActiveUserPreset(state: SettingsPresetsState): SettingsPreset | null {
+export function getActiveUserPreset(
+  state: SettingsPresetsState,
+): SettingsPreset | null {
   const activePresetRef = state.activePresetRef
   if (activePresetRef?.source === 'user') {
-    const active = state.presets.find(preset => preset.id === activePresetRef.id)
+    const active = state.presets.find(
+      (preset) => preset.id === activePresetRef.id,
+    )
     if (active) {
       return active
     }
@@ -262,9 +246,10 @@ function normalizePreset(value: unknown): SettingsPreset | null {
   }
 
   const source = value as Partial<SettingsPreset>
-  const id = typeof source.id === 'string' && source.id.trim()
-    ? source.id
-    : createPresetId()
+  const id =
+    typeof source.id === 'string' && source.id.trim()
+      ? source.id
+      : createPresetId()
 
   return {
     id,
@@ -291,7 +276,9 @@ function normalizeSnapshot(snapshot: unknown): SettingsSnapshot {
   const legacyParticipantsCsvUrl = source.participants?.csvUrl
 
   return {
-    serverUrl: isValidHttpUrl(source.serverUrl) ? source.serverUrl : defaults.serverUrl,
+    serverUrl: isValidHttpUrl(source.serverUrl)
+      ? source.serverUrl
+      : defaults.serverUrl,
     carClasses: normalizeCarClasses(source.carClasses),
     participantsCsvUrl: normalizeOptionalHttpUrl(
       source.participantsCsvUrl ?? legacyParticipantsCsvUrl,
@@ -339,7 +326,9 @@ function normalizeCarClasses(value: unknown): CarClassRule[] {
       return {
         name: typeof source.name === 'string' ? source.name : '',
         patterns: Array.isArray(source.patterns)
-          ? source.patterns.filter((pattern): pattern is string => typeof pattern === 'string')
+          ? source.patterns.filter(
+              (pattern): pattern is string => typeof pattern === 'string',
+            )
           : [],
       }
     })
@@ -361,8 +350,7 @@ function isValidHttpUrl(value: unknown): value is string {
   try {
     const url = new URL(value)
     return url.protocol === 'http:' || url.protocol === 'https:'
-  }
-  catch {
+  } catch {
     return false
   }
 }
@@ -400,18 +388,25 @@ function normalizeActivePresetRef(
   if (activePresetRef && typeof activePresetRef === 'object') {
     const source = (activePresetRef as Partial<PresetRef>).source
     const id = (activePresetRef as Partial<PresetRef>).id
-    if ((source === 'official' || source === 'user') && typeof id === 'string' && id.trim()) {
+    if (
+      (source === 'official' || source === 'user') &&
+      typeof id === 'string' &&
+      id.trim()
+    ) {
       if (source === 'official') {
         return { source, id }
       }
 
-      if (presets.some(preset => preset.id === id)) {
+      if (presets.some((preset) => preset.id === id)) {
         return { source, id }
       }
     }
   }
 
-  if (typeof activePresetId === 'string' && presets.some(preset => preset.id === activePresetId)) {
+  if (
+    typeof activePresetId === 'string' &&
+    presets.some((preset) => preset.id === activePresetId)
+  ) {
     return { source: 'user', id: activePresetId }
   }
 
@@ -427,10 +422,13 @@ function normalizeActivePresetRef(
  * @param presets Existing presets.
  * @returns Unique clone display name.
  */
-function createCloneName(sourceName: string, presets: SettingsPreset[]): string {
+function createCloneName(
+  sourceName: string,
+  presets: SettingsPreset[],
+): string {
   const baseName = normalizePresetName(sourceName)
   const normalizedNames = new Set(
-    presets.map(preset => preset.name.trim().toLowerCase()),
+    presets.map((preset) => preset.name.trim().toLowerCase()),
   )
 
   let index = 1
@@ -450,7 +448,10 @@ function createCloneName(sourceName: string, presets: SettingsPreset[]): string 
  * @returns Preset id value.
  */
 function createPresetId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+  if (
+    typeof crypto !== 'undefined' &&
+    typeof crypto.randomUUID === 'function'
+  ) {
     return crypto.randomUUID()
   }
 

@@ -87,14 +87,16 @@ function LiveTimingHeader({
                   </SelectItem>
                 ))}
               </SelectGroup>
-              <SelectGroup>
-                <SelectLabel>Your presets</SelectLabel>
-                {userPresetOptions.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
+              {userPresetOptions.length > 0 && (
+                <SelectGroup>
+                  <SelectLabel>Your presets</SelectLabel>
+                  {userPresetOptions.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              )}
             </SelectContent>
           </Select>
 

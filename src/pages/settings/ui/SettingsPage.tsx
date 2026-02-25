@@ -294,17 +294,19 @@ export function SettingsPage() {
                         </SelectItem>
                       ))}
                     </SelectGroup>
-                    <SelectGroup>
-                      <SelectLabel>Your presets</SelectLabel>
-                      {presets.presetGroups.user.map((item) => (
-                        <SelectItem
-                          key={serializePresetRef(item.ref)!}
-                          value={serializePresetRef(item.ref)!}
-                        >
-                          {item.preset.name}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
+                    {presets.presetGroups.user.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>Your presets</SelectLabel>
+                        {presets.presetGroups.user.map((item) => (
+                          <SelectItem
+                            key={serializePresetRef(item.ref)!}
+                            value={serializePresetRef(item.ref)!}
+                          >
+                            {item.preset.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -354,16 +356,22 @@ export function SettingsPage() {
               </CardAction>
             </CardHeader>
             <CardContent className="grid gap-2 py-4">
-              {presets.presetGroups.user.map((item) => (
-                <PresetRow
-                  key={serializePresetRef(item.ref)!}
-                  item={item}
-                  canDelete={presets.userPresets.length > 1}
-                  onEdit={() => openEditDialog(item.preset)}
-                  onClone={() => handleClonePreset(item.ref.id)}
-                  onDelete={() => setDeletePresetId(item.ref.id)}
-                />
-              ))}
+              {presets.presetGroups.user.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No local presets yet. Click Add Preset to create one.
+                </p>
+              ) : (
+                presets.presetGroups.user.map((item) => (
+                  <PresetRow
+                    key={serializePresetRef(item.ref)!}
+                    item={item}
+                    canDelete
+                    onEdit={() => openEditDialog(item.preset)}
+                    onClone={() => handleClonePreset(item.ref.id)}
+                    onDelete={() => setDeletePresetId(item.ref.id)}
+                  />
+                ))
+              )}
             </CardContent>
           </Card>
         </div>
@@ -456,7 +464,6 @@ export function SettingsPage() {
             <AlertDialogAction
               variant="destructive"
               onClick={handleDeletePreset}
-              disabled={presets.userPresets.length <= 1}
             >
               Delete
             </AlertDialogAction>

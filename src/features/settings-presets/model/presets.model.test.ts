@@ -66,20 +66,34 @@ describe('presets.model persistence', () => {
 
     const persistedState = JSON.parse(persistedRaw!)
     expect(persistedState.presets.length).toBe(initialState.presets.length + 1)
-    expect(persistedState.presets.some((preset: { name: string }) => /\(\d+\)$/.test(preset.name))).toBe(true)
+    expect(
+      persistedState.presets.some((preset: { name: string }) =>
+        /\(\d+\)$/.test(preset.name),
+      ),
+    ).toBe(true)
   })
 
   it('clones official preset into user presets', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify([
-      {
-        name: 'Official AC',
-        settings: {
-          serverUrl: 'https://official.test/leaderboard.json',
-          participantsCsvUrl: '',
-          carClasses: [],
-        },
-      },
-    ]), { status: 200 })))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify([
+              {
+                id: 'official-ac',
+                name: 'Official AC',
+                settings: {
+                  serverUrl: 'https://official.test/leaderboard.json',
+                  participantsCsvUrl: '',
+                  carClasses: [],
+                },
+              },
+            ]),
+            { status: 200 },
+          ),
+      ),
+    )
 
     const model = await import('./presets.model')
     const officialModel = await import('./official-presets.model')
@@ -88,11 +102,59 @@ describe('presets.model persistence', () => {
     await allSettled(officialModel.officialPresetsSyncRequested, { scope })
     await allSettled(model.presetCloned, {
       scope,
-      params: { source: 'official', id: 'official ac' },
+      params: { source: 'official', id: 'official-ac' },
     })
 
     const state = scope.getState(model.$presetsState)
-    expect(state.presets.some(preset => preset.name === 'Official AC')).toBe(true)
+    expect(state.presets.some((preset) => preset.name === 'Official AC')).toBe(
+      true,
+    )
     expect(state.activePresetRef?.source).toBe('user')
+  })
+
+  it('falls back to defaults when persisted state is malformed JSON', async () => {
+    localStorage.setItem(SETTINGS_PRESETS_STORAGE_KEY, '{bad-json')
+
+    const model = await import('./presets.model')
+    const scope = fork()
+
+    await allSettled(model.presetsPersistencePickupRequested, { scope })
+
+    const state = scope.getState(model.$presetsState)
+    expect(state.presets.length).toBeGreaterThan(0)
+    expect(state.activePresetRef).not.toBeNull()
+  })
+
+  it('keeps official active preset ref after pickup before official sync completes', async () => {
+    const persistedState = {
+      version: 2,
+      activePresetRef: { source: 'official', id: 'ac7.endurance' },
+      presets: [
+        {
+          id: 'user-1',
+          name: 'User 1',
+          settings: {
+            serverUrl: 'https://user.test/leaderboard.json',
+            participantsCsvUrl: '',
+            carClasses: [],
+          },
+        },
+      ],
+    }
+    localStorage.setItem(
+      SETTINGS_PRESETS_STORAGE_KEY,
+      JSON.stringify(persistedState),
+    )
+
+    const model = await import('./presets.model')
+    const scope = fork()
+
+    await allSettled(model.presetsPersistencePickupRequested, { scope })
+
+    const state = scope.getState(model.$presetsState)
+    expect(state.activePresetRef).toEqual({
+      source: 'official',
+      id: 'ac7.endurance',
+    })
   })
 })

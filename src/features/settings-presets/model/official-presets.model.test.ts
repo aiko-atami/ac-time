@@ -50,51 +50,79 @@ describe('official-presets.model', () => {
   })
 
   it('loads and caches official presets on successful fetch', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify([
-      {
-        name: 'AC10',
-        settings: {
-          serverUrl: 'https://example.test/leaderboard.json',
-          participantsCsvUrl: '',
-          carClasses: [],
-        },
-      },
-    ]), { status: 200 })))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify([
+              {
+                id: 'ac10',
+                name: 'AC10',
+                settings: {
+                  serverUrl: 'https://example.test/leaderboard.json',
+                  participantsCsvUrl: '',
+                  carClasses: [],
+                },
+              },
+              {
+                id: 'AC10',
+                name: 'AC10 Duplicate',
+                settings: {
+                  serverUrl: 'https://example2.test/leaderboard.json',
+                  participantsCsvUrl: '',
+                  carClasses: [],
+                },
+              },
+            ]),
+            { status: 200 },
+          ),
+      ),
+    )
 
     const model = await import('./official-presets.model')
     const scope = fork()
     await allSettled(model.officialPresetsSyncRequested, { scope })
 
     const presets = scope.getState(model.$officialPresets)
-    expect(presets.length).toBe(1)
+    expect(presets.length).toBe(2)
     expect(presets[0].id).toBe('ac10')
+    expect(presets[1].id).toBe('ac10-2')
     expect(scope.getState(model.$officialPresetsSyncStatus)).toBe('success')
-    expect(localStorage.getItem(OFFICIAL_PRESETS_CACHE_STORAGE_KEY)).not.toBeNull()
+    expect(
+      localStorage.getItem(OFFICIAL_PRESETS_CACHE_STORAGE_KEY),
+    ).not.toBeNull()
   })
 
   it('uses stale cache as fallback when fetch fails', async () => {
     const staleTime = Date.now() - OFFICIAL_PRESETS_SYNC_TTL_MS - 5000
-    localStorage.setItem(OFFICIAL_PRESETS_CACHE_STORAGE_KEY, JSON.stringify({
-      syncedAt: staleTime,
-      presets: [
-        {
-          id: 'cached',
-          preset: {
+    localStorage.setItem(
+      OFFICIAL_PRESETS_CACHE_STORAGE_KEY,
+      JSON.stringify({
+        syncedAt: staleTime,
+        presets: [
+          {
             id: 'cached',
-            name: 'Cached',
-            settings: {
-              serverUrl: 'https://cached.test/leaderboard.json',
-              participantsCsvUrl: '',
-              carClasses: [],
+            preset: {
+              id: 'cached',
+              name: 'Cached',
+              settings: {
+                serverUrl: 'https://cached.test/leaderboard.json',
+                participantsCsvUrl: '',
+                carClasses: [],
+              },
             },
           },
-        },
-      ],
-    }))
+        ],
+      }),
+    )
 
-    vi.stubGlobal('fetch', vi.fn(async () => {
-      throw new Error('network')
-    }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new Error('network')
+      }),
+    )
 
     const model = await import('./official-presets.model')
     const scope = fork()

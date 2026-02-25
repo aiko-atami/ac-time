@@ -1,4 +1,8 @@
 // Effector model for local user presets merged with synced official presets.
+
+import { combine, createEvent, createStore, sample } from 'effector'
+import { persist } from 'effector-storage/local'
+import { SETTINGS_PRESETS_STORAGE_KEY } from '@/shared/config/constants'
 import type {
   PresetRef,
   ResolvedPreset,
@@ -6,9 +10,6 @@ import type {
   SettingsPresetsState,
   SettingsSnapshot,
 } from '@/shared/types'
-import { combine, createEvent, createStore, sample } from 'effector'
-import { persist } from 'effector-storage/local'
-import { SETTINGS_PRESETS_STORAGE_KEY } from '@/shared/config/constants'
 import { $officialPresets } from './official-presets.model'
 import {
   clonePreset,
@@ -49,38 +50,56 @@ const officialPresetCloneRequested = createEvent<PresetCreatePayload>()
 const activePresetRefReconciled = createEvent<PresetRef>()
 
 // Canonical persisted state: local user presets and selected active reference.
-const $presetsState = createStore<SettingsPresetsState>(createDefaultPresetsState())
-  .on(presetSelected, (state, presetRef) => selectActivePresetRef(state, presetRef))
-  .on(activePresetRefReconciled, (state, presetRef) => selectActivePresetRef(state, presetRef))
-  .on(presetCreated, (state, payload) => createPreset(state, payload.name, payload.settings))
-  .on(officialPresetCloneRequested, (state, payload) => createPreset(state, payload.name, payload.settings))
-  .on(presetUpdated, (state, payload) => updatePreset(state, payload.presetId, payload.name, payload.settings))
+const $presetsState = createStore<SettingsPresetsState>(
+  createDefaultPresetsState(),
+)
+  .on(presetSelected, (state, presetRef) =>
+    selectActivePresetRef(state, presetRef),
+  )
+  .on(activePresetRefReconciled, (state, presetRef) =>
+    selectActivePresetRef(state, presetRef),
+  )
+  .on(presetCreated, (state, payload) =>
+    createPreset(state, payload.name, payload.settings),
+  )
+  .on(officialPresetCloneRequested, (state, payload) =>
+    createPreset(state, payload.name, payload.settings),
+  )
+  .on(presetUpdated, (state, payload) =>
+    updatePreset(state, payload.presetId, payload.name, payload.settings),
+  )
   .on(presetDeleted, (state, presetId) => deletePreset(state, presetId))
-  .on(userPresetCloneRequested, (state, presetId) => clonePreset(state, presetId))
+  .on(userPresetCloneRequested, (state, presetId) =>
+    clonePreset(state, presetId),
+  )
 
 // Read model: local user presets only.
-const $presets = $presetsState.map(state => state.presets)
+const $presets = $presetsState.map((state) => state.presets)
 // Read model: selected source-aware active preset ref.
-const $activePresetRef = $presetsState.map(state => state.activePresetRef)
+const $activePresetRef = $presetsState.map((state) => state.activePresetRef)
 
 // Read model: official presets resolved into common UI shape.
-const $officialPresetItems = $officialPresets.map(officialPresets =>
-  officialPresets.map(({ id, preset }): ResolvedPreset => ({
-    ref: { source: 'official', id },
-    source: 'official',
-    preset,
-    readOnly: true,
-  })),
+const $officialPresetItems = $officialPresets.map((officialPresets) =>
+  officialPresets.map(
+    ({ id, preset }): ResolvedPreset => ({
+      ref: { source: 'official', id },
+      source: 'official',
+      preset,
+      readOnly: true,
+    }),
+  ),
 )
 
 // Read model: user presets resolved into common UI shape.
-const $userPresetItems = $presets.map(userPresets =>
-  userPresets.map((preset): ResolvedPreset => ({
-    ref: { source: 'user', id: preset.id },
-    source: 'user',
-    preset,
-    readOnly: false,
-  })),
+const $userPresetItems = $presets.map((userPresets) =>
+  userPresets.map(
+    (preset): ResolvedPreset => ({
+      ref: { source: 'user', id: preset.id },
+      source: 'user',
+      preset,
+      readOnly: false,
+    }),
+  ),
 )
 
 // Read model: grouped preset options for settings UI and selectors.
@@ -103,6 +122,11 @@ const $resolvedActivePresetRef = combine(
   $officialPresetItems,
   $userPresetItems,
   (activePresetRef, official, user): PresetRef | null => {
+    // Preserve selected official ref while official presets are still loading.
+    if (activePresetRef?.source === 'official' && official.length === 0) {
+      return activePresetRef
+    }
+
     const active = resolvePresetByRef(activePresetRef, official, user)
     if (active) {
       return active.ref
@@ -128,14 +152,14 @@ if (isLocalStorageAvailable()) {
     key: SETTINGS_PRESETS_STORAGE_KEY,
     pickup: presetsPersistencePickupRequested,
     // Normalize persisted payload before it reaches the store to keep state shape safe.
-    deserialize: value => normalizeState(JSON.parse(value)),
+    deserialize: safeDeserializePresetsState,
   })
 }
 
 sample({
   clock: presetCloned,
-  filter: presetRef => presetRef.source === 'user',
-  fn: presetRef => presetRef.id,
+  filter: (presetRef) => presetRef.source === 'user',
+  fn: (presetRef) => presetRef.id,
   target: userPresetCloneRequested,
 })
 
@@ -143,10 +167,10 @@ sample({
   clock: presetCloned,
   source: $officialPresets,
   filter: (officialPresets, presetRef) =>
-    presetRef.source === 'official'
-    && officialPresets.some(item => item.id === presetRef.id),
+    presetRef.source === 'official' &&
+    officialPresets.some((item) => item.id === presetRef.id),
   fn: (officialPresets, presetRef) => {
-    const official = officialPresets.find(item => item.id === presetRef.id)!
+    const official = officialPresets.find((item) => item.id === presetRef.id)!
     return {
       name: official.preset.name,
       settings: official.preset.settings,
@@ -162,12 +186,10 @@ sample({
     resolvedActivePresetRef: $resolvedActivePresetRef,
   },
   filter: ({ activePresetRef, resolvedActivePresetRef }) =>
-    Boolean(resolvedActivePresetRef)
-    && (
-      !activePresetRef
-      || activePresetRef.source !== resolvedActivePresetRef!.source
-      || activePresetRef.id !== resolvedActivePresetRef!.id
-    ),
+    Boolean(resolvedActivePresetRef) &&
+    (!activePresetRef ||
+      activePresetRef.source !== resolvedActivePresetRef!.source ||
+      activePresetRef.id !== resolvedActivePresetRef!.id),
   fn: ({ resolvedActivePresetRef }) => resolvedActivePresetRef!,
   target: activePresetRefReconciled,
 })
@@ -206,7 +228,7 @@ function resolvePresetByRef(
   }
 
   const sourceItems = presetRef.source === 'official' ? official : user
-  return sourceItems.find(item => item.ref.id === presetRef.id) ?? null
+  return sourceItems.find((item) => item.ref.id === presetRef.id) ?? null
 }
 
 /**
@@ -215,11 +237,25 @@ function resolvePresetByRef(
  */
 function isLocalStorageAvailable(): boolean {
   try {
-    return typeof localStorage !== 'undefined'
-      && typeof localStorage.getItem === 'function'
-      && typeof localStorage.setItem === 'function'
-  }
-  catch {
+    return (
+      typeof localStorage !== 'undefined' &&
+      typeof localStorage.getItem === 'function' &&
+      typeof localStorage.setItem === 'function'
+    )
+  } catch {
     return false
+  }
+}
+
+/**
+ * Safely deserializes persisted presets state from localStorage payload.
+ * @param value Raw JSON payload.
+ * @returns Normalized state with fallback to defaults on parse errors.
+ */
+function safeDeserializePresetsState(value: string): SettingsPresetsState {
+  try {
+    return normalizeState(JSON.parse(value))
+  } catch {
+    return createDefaultPresetsState()
   }
 }

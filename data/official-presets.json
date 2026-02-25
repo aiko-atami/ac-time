@@ -1,38 +1,32 @@
 [
   {
+    "id": "ac7.endurance",
     "name": "ac7.endurance",
     "settings": {
       "serverUrl": "https://ac7.yoklmnracing.ru/api/live-timings/leaderboard.json",
       "carClasses": [
         {
           "name": "Porsche Cup",
-          "patterns": [
-            "Porsche 911"
-          ]
+          "patterns": ["Porsche 911"]
         },
         {
           "name": "GT3",
-          "patterns": [
-            "GT3"
-          ]
+          "patterns": ["GT3"]
         },
         {
           "name": "GT4",
-          "patterns": [
-            "GT4"
-          ]
+          "patterns": ["GT4"]
         },
         {
           "name": "TCR",
-          "patterns": [
-            "TCR"
-          ]
+          "patterns": ["TCR"]
         }
       ],
       "participantsCsvUrl": "https://github.com/aiko-atami/ac-time/releases/download/championship-543/participants-543.csv"
     }
   },
   {
+    "id": "ac7.gold",
     "name": "ac7.gold",
     "settings": {
       "serverUrl": "https://ac7.yoklmnracing.ru/api/live-timings/leaderboard.json",
@@ -41,6 +35,7 @@
     }
   },
   {
+    "id": "ac8.bronze-silver",
     "name": "ac8.bronze-silver",
     "settings": {
       "serverUrl": "https://ac8.yoklmnracing.ru/api/live-timings/leaderboard.json",
@@ -62,6 +57,7 @@
     }
   },
   {
+    "id": "ac9.all",
     "name": "ac9.all",
     "settings": {
       "serverUrl": "https://ac9.yoklmnracing.ru/api/live-timings/leaderboard.json",

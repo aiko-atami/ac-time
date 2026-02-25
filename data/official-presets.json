@@ -26,10 +26,28 @@
     }
   },
   {
-    "id": "ac7.gold",
-    "name": "ac7.gold",
+    "id": "ac7.touring.gold",
+    "name": "ac7.touring.gold",
     "settings": {
       "serverUrl": "https://ac7.yoklmnracing.ru/api/live-timings/leaderboard.json",
+      "carClasses": [],
+      "participantsCsvUrl": "https://github.com/aiko-atami/ac-time/releases/download/championship-537/participants-537.csv"
+    }
+  },
+  {
+    "id": "ac8.touring.silver",
+    "name": "ac8.touring.silver",
+    "settings": {
+      "serverUrl": "https://ac8.yoklmnracing.ru/api/live-timings/leaderboard.json",
+      "carClasses": [],
+      "participantsCsvUrl": "https://github.com/aiko-atami/ac-time/releases/download/championship-537/participants-537.csv"
+    }
+  },
+  {
+    "id": "ac53.touring.bronze",
+    "name": "ac53.touring.bronze",
+    "settings": {
+      "serverUrl": "https://ac53.yoklmnracing.ru/api/live-timings/leaderboard.json",
       "carClasses": [],
       "participantsCsvUrl": "https://github.com/aiko-atami/ac-time/releases/download/championship-537/participants-537.csv"
     }
@@ -45,11 +63,7 @@
           "patterns": ["SUPER-PRODUCTION"]
         },
         {
-          "name": "Бронза 1",
-          "patterns": ["LADA 2118 Concept C GT"]
-        },
-        {
-          "name": "Бронза 2",
+          "name": "Бронза",
           "patterns": ["LADA 2118 Concept C GT"]
         }
       ],
@@ -57,8 +71,8 @@
     }
   },
   {
-    "id": "ac9.all",
-    "name": "ac9.all",
+    "id": "ac9.mazda",
+    "name": "ac9.mazda",
     "settings": {
       "serverUrl": "https://ac9.yoklmnracing.ru/api/live-timings/leaderboard.json",
       "carClasses": [],

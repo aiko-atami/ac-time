@@ -242,7 +242,7 @@ export function SettingsPage() {
 
   return (
     <div className="min-h-screen relative">
-      <div className="container mx-auto px-3 py-4 sm:py-5 max-w-4xl">
+      <div className="container mx-auto px-3 py-4 sm:py-5 max-w-4xl md:max-w-6xl lg:max-w-7xl">
         <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="text-2xl font-bold sm:text-3xl">Settings</h1>

@@ -2,7 +2,7 @@ name: Update Participants
 
 on:
   schedule:
-    - cron: '0 5-21/2 * * *' # every 2 hours, 05:00–21:00 UTC
+    - cron: '0 5-21/4 * * *' # every 4 hours, 05:00–21:00 UTC
   workflow_dispatch:
 
 permissions:
@@ -20,12 +20,9 @@ jobs:
           - championship_id: '537'
             championship_name: 'HTRS Touring [9]'
             scrape_url: 'https://yoklmnracing.ru/championships/537'
-          - championship_id: '538'
-            championship_name: 'HTRS Mazda MX-5 Cup [2]'
-            scrape_url: 'https://yoklmnracing.ru/championships/538'
-          - championship_id: '543'
-            championship_name: 'HTRS Corsa Endurance Cup [1]'
-            scrape_url: 'https://yoklmnracing.ru/championships/543'
+          - championship_id: '574'
+            championship_name: 'HTRS Mazda MX-5 Cup [3]'
+            scrape_url: 'https://yoklmnracing.ru/championships/574'
     steps:
       - name: Download Scraper Binary
         env:
